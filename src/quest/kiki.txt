@@ -1,0 +1,6 @@
+0000:
+hello i am cat
+have a good cat day
+
+0100:
+you have completed the quest
