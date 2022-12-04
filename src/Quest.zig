@@ -65,7 +65,12 @@ pub fn update_draw(self: *Self, controls: Controller) bool {
         }
     }
 
-    w4.text(line[0..len], 0, 120);
+    if (len > 19) {
+        w4.text(line[0..19], 4, 140);
+        w4.text(line[19..len], 4, 150);
+    } else {
+        w4.text(line[0..len], 4, 150);
+    }
 
     return true;
 }
