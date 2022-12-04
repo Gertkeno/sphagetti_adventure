@@ -37,7 +37,7 @@ export fn update() void {
     }
 
     if (gamepad.released.y) {
-        kiki.talk(10);
+        kiki.talk(0);
     }
 
     player.update(gamepad);

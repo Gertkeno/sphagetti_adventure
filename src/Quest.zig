@@ -56,12 +56,16 @@ pub fn update_draw(self: *Self, controls: Controller) bool {
 
     const len = std.math.min(self.chardraw >> 2, line.len);
     if (controls.released.x or controls.released.y) {
-        self.chardraw = 0;
+        if (len == line.len) {
+            self.chardraw = 0;
 
-        self.readhead.? += line.len + 1;
-        if (self.readhead.? >= self.dialogue.len or self.dialogue[self.readhead.?] == '0') {
-            self.readhead = null;
-            return false;
+            self.readhead.? += line.len + 1;
+            if (self.readhead.? >= self.dialogue.len or self.dialogue[self.readhead.?] == '0') {
+                self.readhead = null;
+                return false;
+            }
+        } else {
+            self.chardraw = line.len << 2;
         }
     }
 
