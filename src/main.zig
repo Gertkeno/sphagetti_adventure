@@ -5,9 +5,7 @@ const Player = @import("Player.zig");
 const Controller = @import("Controller.zig");
 const Quest = @import("Quest.zig");
 
-var kiki = Quest{
-    .dialogue = @embedFile("quest/kiki.txt"),
-};
+var kiki = Quest.init_comptime(@embedFile("quest/kiki.txt"));
 
 var gamepad: Controller = .{};
 var player: Player = .{};

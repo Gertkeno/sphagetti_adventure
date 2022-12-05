@@ -6,49 +6,103 @@ const Controller = @import("Controller.zig");
 
 const Self = @This();
 
+const Dialogue = struct {
+    progress: u8,
+    lines: []String,
+};
+
+// read head
 progress: u8 = 0,
+readhead: ?[]const String = null,
+readhead_index: usize = 0,
 chardraw: usize = 0,
-readhead: ?usize = null,
-dialogue: String,
 
-fn find_head(file: String, progress: u8) ?usize {
-    var buffer: [3]u8 = undefined;
-    const strlen = std.fmt.formatIntBuf(&buffer, progress, 10, .lower, .{});
+// data
+dialogue: []Dialogue,
 
-    const str = buffer[0..strlen];
-
-    if (std.mem.indexOf(u8, file, str)) |index| {
-        if (std.mem.indexOfScalar(u8, file[index..], '\n')) |end| {
-            return index + end + 1;
-        } else {
-            return null;
-        }
-    } else {
-        return null;
-    }
+fn dialog_descending(_: void, lhs: Dialogue, rhs: Dialogue) bool {
+    return lhs.progress > rhs.progress;
 }
 
-fn get_line(string: String) String {
-    if (std.mem.indexOfScalar(u8, string, '\n')) |end| {
-        return std.mem.trimLeft(u8, string[0..end], &std.ascii.spaces);
-    } else {
-        return std.mem.trim(u8, string, &std.ascii.spaces);
+pub fn init_comptime(comptime dialogue: String) Self {
+    const page_count = std.mem.count(u8, dialogue, "#");
+
+    if (page_count == 0) {
+        @compileError("dialogue must have at least one page");
     }
+
+    var pages: [page_count]Dialogue = undefined;
+    var page_index: usize = 0;
+    var line_index: usize = 0;
+
+    var text_buffer: [3000]u8 = undefined;
+    var text_index: usize = 0;
+
+    var lines_buffer: [200]String = undefined;
+    var buffer_index: usize = 0;
+
+    var tokenItr = std.mem.tokenize(u8, dialogue, "#\n");
+    while (tokenItr.next()) |t| {
+        const token = std.mem.trim(u8, t, &std.ascii.spaces);
+        if (std.fmt.parseUnsigned(u8, token, 10)) |progress| {
+            pages[page_index].progress = progress;
+            if (page_index > 0) {
+                const start = buffer_index - line_index;
+                const end = buffer_index;
+                pages[page_index - 1].lines = lines_buffer[start..end];
+            }
+            page_index += 1;
+            line_index = 0;
+        } else |_| {
+            std.mem.copy(u8, text_buffer[text_index..], token);
+            const new_text = text_buffer[text_index .. text_index + token.len];
+
+            lines_buffer[buffer_index] = new_text;
+
+            text_index += token.len;
+            line_index += 1;
+            buffer_index += 1;
+        }
+    }
+
+    if (page_index > 0) {
+        const start = buffer_index - line_index;
+        const end = buffer_index;
+        pages[page_index - 1].lines = lines_buffer[start..end];
+    }
+
+    const sort = std.sort.sort;
+    sort(Dialogue, &pages, {}, dialog_descending);
+
+    return Self{
+        .dialogue = &pages,
+    };
 }
 
 pub fn talk(self: *Self, update_progress: ?u8) void {
     self.progress = update_progress orelse self.progress;
 
-    self.readhead = find_head(self.dialogue, self.progress);
+    const head = for (self.dialogue) |dialog| {
+        if (dialog.progress <= self.progress) {
+            break dialog.lines;
+        }
+    } else {
+        return;
+    };
+
+    self.readhead = head;
+    self.readhead_index = 0;
+    self.chardraw = 0;
 }
 
 pub fn update_draw(self: *Self, controls: Controller) bool {
     if (self.readhead == null) {
         return false;
     }
+    const readhead = self.readhead.?;
 
     self.chardraw += 1;
-    const line = get_line(self.dialogue[self.readhead.?..]);
+    const line = readhead[self.readhead_index];
     if (line.len <= 1) {
         self.readhead = null;
         return false;
@@ -59,8 +113,8 @@ pub fn update_draw(self: *Self, controls: Controller) bool {
         if (len == line.len) {
             self.chardraw = 0;
 
-            self.readhead.? += line.len + 1;
-            if (self.readhead.? >= self.dialogue.len or self.dialogue[self.readhead.?] == '0') {
+            self.readhead_index += 1;
+            if (self.readhead_index >= readhead.len) {
                 self.readhead = null;
                 return false;
             }
