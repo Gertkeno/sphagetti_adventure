@@ -24,7 +24,33 @@ fn dialog_descending(_: void, lhs: Dialogue, rhs: Dialogue) bool {
     return lhs.progress > rhs.progress;
 }
 
+fn line_count(dialogue: String) usize {
+    var count: usize = 0;
+    var lineitr = std.mem.tokenize(u8, dialogue, "\n");
+    while (lineitr.next()) |line| {
+        if (line[0] != '#') {
+            count += 1;
+        }
+    }
+
+    return count;
+}
+
+fn char_count(dialogue: String) usize {
+    var count: usize = 0;
+    var lineitr = std.mem.tokenize(u8, dialogue, "\n");
+    while (lineitr.next()) |line| {
+        if (line[0] != '#') {
+            const trimmed = std.mem.trim(u8, line, &std.ascii.spaces);
+
+            count += trimmed.len;
+        }
+    }
+    return count;
+}
+
 pub fn init_comptime(comptime dialogue: String) Self {
+    @setEvalBranchQuota(9999);
     const page_count = std.mem.count(u8, dialogue, "#");
 
     if (page_count == 0) {
@@ -35,11 +61,13 @@ pub fn init_comptime(comptime dialogue: String) Self {
     var page_index: usize = 0;
     var line_index: usize = 0;
 
-    var text_buffer: [3000]u8 = undefined;
-    var text_index: usize = 0;
-
-    var lines_buffer: [200]String = undefined;
+    const lc = line_count(dialogue);
+    var lines_buffer: [lc]String = undefined;
     var buffer_index: usize = 0;
+
+    const tc = char_count(dialogue);
+    var text_buffer: [tc]u8 = undefined;
+    var text_index: usize = 0;
 
     var tokenItr = std.mem.tokenize(u8, dialogue, "#\n");
     while (tokenItr.next()) |t| {
