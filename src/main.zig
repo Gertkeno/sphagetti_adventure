@@ -10,7 +10,6 @@ var kiki = Quest.init_comptime(@embedFile("quest/kiki.txt"));
 
 var gamepad: Controller = .{};
 var player: Player = .{};
-var rng = std.rand.DefaultPrng.init(0);
 
 const palette = [4]u32{
     0xFFebe5ce,
@@ -30,7 +29,6 @@ export fn update() void {
     };
 
     w4.DRAW_COLORS.* = 0x02;
-    w4.text("spagetthi meter", 0, 0);
 
     gamepad.update(w4.GAMEPAD1.*);
     if (gamepad.held.x) {
@@ -44,12 +42,7 @@ export fn update() void {
     if (gamepad.released.y) {
         kiki.talk(0);
     } else if (gamepad.released.x) {
-        maze.generate_maze(rng.random(), .{
-            .x = 0,
-            .y = 0,
-            .w = 160,
-            .h = 160,
-        });
+        maze.generate(2121);
     }
 
     player.update(gamepad);
