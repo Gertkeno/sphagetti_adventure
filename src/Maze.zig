@@ -117,16 +117,19 @@ const test_tile = [tile_size]u8{
 // cells with an offset. could use x & 0b1111 depending on the tile size if a
 // factor of 2
 pub fn draw(self: Self, camera: Point) void {
-    //const inset_y = @mod(camera.y, tile_size);
+    const reduced_wh = w4.SCREEN_SIZE / tile_size;
+
     const inset_x = @mod(camera.x, tile_size);
+    const mx = @divTrunc(camera.x, tile_size);
+    const maxx = std.math.min(mx + reduced_wh + 1, maze_width);
 
     var my = @divTrunc(camera.y, tile_size);
-    const reduced_wh = w4.SCREEN_SIZE / tile_size;
-    const maxy = my + reduced_wh + 1;
+    const maxy = std.math.min(my + reduced_wh + 1, maze_height);
     while (my < maxy) : (my += 1) {
-        const mx = @divTrunc(camera.x, tile_size);
         const start = @intCast(usize, mx + my * maze_width);
-        for (self.data[start .. start + reduced_wh + 1]) |tile, n| {
+        const end = @intCast(usize, maxx + my * maze_width);
+
+        for (self.data[start..end]) |tile, n| {
             if (tile == .wall) {
                 const x = @intCast(i32, n) * tile_size - inset_x;
                 const y = my * tile_size - camera.y;
