@@ -6,10 +6,13 @@ const Player = @import("Player.zig");
 const Controller = @import("Controller.zig");
 const Quest = @import("Quest.zig");
 
+const Point = @import("Point.zig");
+
 var kiki = Quest.init_comptime(@embedFile("quest/kiki.txt"));
 
 var gamepad: Controller = .{};
 var player: Player = .{};
+var camera = Point.zero;
 
 const palette = [4]u32{
     0xFFebe5ce,
@@ -18,16 +21,17 @@ const palette = [4]u32{
     0xFF3e2653,
 };
 
+var maze_data: [160 * 90]Maze.Tile = undefined;
+var maze = Maze{
+    .data = &maze_data,
+};
+
 export fn start() void {
     std.mem.copy(u32, w4.PALETTE, &palette);
-    w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
+    //w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
 }
 
 export fn update() void {
-    var maze = Maze{
-        .data = undefined,
-    };
-
     w4.DRAW_COLORS.* = 0x02;
 
     gamepad.update(w4.GAMEPAD1.*);
@@ -45,7 +49,15 @@ export fn update() void {
         maze.generate(2121);
     }
 
-    player.update(gamepad);
+    camera.x += gamepad.x_axis();
+    camera.y += gamepad.y_axis();
 
-    player.draw();
+    camera.x = std.math.max(0, camera.x);
+    camera.y = std.math.max(0, camera.y);
+
+    maze.draw(camera);
+
+    //player.update(gamepad);
+
+    //player.draw();
 }

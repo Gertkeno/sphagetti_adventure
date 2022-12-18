@@ -1,5 +1,6 @@
 const w4 = @import("wasm4.zig");
 const std = @import("std");
+const Point = @import("Point.zig");
 const Rect = @import("Rect.zig");
 const Self = @This();
 
@@ -12,19 +13,13 @@ pub const Tile = enum(u8) {
 
 data: []Tile,
 
-pub fn initialize(data: []Tile) Self {
-    if (data.len < 160 * 160) {
-        w4.trace("initialized maze needs more memory!");
-    }
-
-    return Self{
-        .data = data,
-    };
-}
+const maze_width = 160;
+const maze_height = 90;
+const tile_size = 8;
 
 fn hline(self: Self, x: i32, y: i32, w: u31) void {
-    const start = @intCast(usize, x + y * 160);
-    for (self.data[start..w]) |*data| {
+    const start = @intCast(usize, x + y * maze_width);
+    for (self.data[start .. start + w]) |*data| {
         data.* = .wall;
     }
 }
@@ -32,7 +27,7 @@ fn hline(self: Self, x: i32, y: i32, w: u31) void {
 fn vline(self: Self, x: i32, y: i32, w: u31) void {
     var iy = y;
     while (iy < y + w) : (iy += 1) {
-        const i = @intCast(usize, x + iy * 160);
+        const i = @intCast(usize, x + iy * maze_width);
         self.data[i] = .wall;
     }
 }
@@ -80,18 +75,15 @@ fn generate_maze(self: Self, rng: std.rand.Random, area: Rect) void {
         },
     };
 
-    w4.hline(area.x, area.y + h, area.w);
-    w4.vline(area.x + w, area.y, area.h);
+    self.hline(area.x, area.y + h, area.w);
+    self.vline(area.x + w, area.y, area.h);
 
     for (gaps) |gap, n| {
         const x = area.x + if (n < 2) w else gap;
         const y = area.y + if (n < 2) gap else h;
 
-        const ipixel: usize = @intCast(usize, y * 160 + x) / 4;
-        const shift: u3 = @intCast(u3, (x & 0b11) * 2);
-        const mask: u8 = @as(u8, 0b11) << shift;
-
-        w4.FRAMEBUFFER[ipixel] = (@as(u8, 0b00) << shift) | (w4.FRAMEBUFFER[ipixel] & ~mask);
+        const ipixel: usize = @intCast(usize, y * maze_width + x);
+        self.data[ipixel] = .empty;
     }
 
     for (bisects) |bisect| {
@@ -100,16 +92,46 @@ fn generate_maze(self: Self, rng: std.rand.Random, area: Rect) void {
 }
 
 pub fn generate(self: Self, seed: u32) void {
-    //std.mem.set(Tile, self.data, .empty);
+    std.mem.set(Tile, self.data, .empty);
     var rng = std.rand.DefaultPrng.init(seed);
     self.generate_maze(rng.random(), .{
         .x = 0,
         .y = 0,
-        .w = 160,
-        .h = 160,
+        .w = maze_width,
+        .h = maze_height,
     });
 }
 
-const Camera = @import("Camera.zig");
+const test_tile = [tile_size]u8{
+    0b11000011,
+    0b10000001,
+    0b00100100,
+    0b00100100,
+    0b00000000,
+    0b00100100,
+    0b10011001,
+    0b11000011,
+};
 
-//pub fn draw(self: Self, camera: Camera) void { }
+// we have pretty weird coordinates. need to reduce camera position into maze
+// cells with an offset. could use x & 0b1111 depending on the tile size if a
+// factor of 2
+pub fn draw(self: Self, camera: Point) void {
+    //const inset_y = @mod(camera.y, tile_size);
+    const inset_x = @mod(camera.x, tile_size);
+
+    var my = @divTrunc(camera.y, tile_size);
+    const reduced_wh = w4.SCREEN_SIZE / tile_size;
+    const maxy = my + reduced_wh + 1;
+    while (my < maxy) : (my += 1) {
+        const mx = @divTrunc(camera.x, tile_size);
+        const start = @intCast(usize, mx + my * maze_width);
+        for (self.data[start .. start + reduced_wh + 1]) |tile, n| {
+            if (tile == .wall) {
+                const x = @intCast(i32, n) * tile_size - inset_x;
+                const y = my * tile_size - camera.y;
+                w4.blit(&test_tile, x, y, tile_size, tile_size, w4.BLIT_1BPP);
+            }
+        }
+    }
+}

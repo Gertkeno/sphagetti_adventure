@@ -15,3 +15,6 @@ pub fn shrink(self: Self, scalar: i32) Self {
         .y = @divTrunc(self.y, scalar),
     };
 }
+
+pub const zero = Self{ .x = 0, .y = 0 };
+pub const one = Self{ .x = 1, .y = 1 };
