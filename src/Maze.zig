@@ -204,9 +204,9 @@ pub fn draw(self: Self, camera: Point) void {
 pub fn walkable(self: Self, area: Rect) bool {
     if (area.x < 0 or area.y < 0) {
         return false;
-    } else if (area.x + area.w > maze_width * tile_size) {
+    } else if (area.x + area.w >= maze_width * tile_size) {
         return false;
-    } else if (area.y + area.h > maze_height * tile_size) {
+    } else if (area.y + area.h >= maze_height * tile_size) {
         return false;
     }
 
