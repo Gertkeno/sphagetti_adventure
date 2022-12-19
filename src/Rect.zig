@@ -37,3 +37,10 @@ pub fn collides_point(a: Self, b: Point) bool {
 
     return true;
 }
+
+pub fn midpoint(self: Self) Point {
+    return Point{
+        .x = self.x + self.w / 2,
+        .y = self.y + self.h / 2,
+    };
+}

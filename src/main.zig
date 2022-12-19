@@ -21,8 +21,8 @@ const palette = [4]u32{
     0xFF3e2653,
 };
 
-var maze_data: [160 * 90]Maze.Tile = undefined;
-var maze = Maze{
+var maze_data: [Maze.array_size]Maze.Tile = undefined;
+export var maze = Maze{
     .data = &maze_data,
 };
 
@@ -46,18 +46,18 @@ export fn update() void {
     if (gamepad.released.y) {
         kiki.talk(0);
     } else if (gamepad.released.x) {
-        maze.generate(2121);
+        maze.generate(@bitCast(u32, camera.x));
     }
 
-    camera.x += gamepad.x_axis();
-    camera.y += gamepad.y_axis();
+    player.update(gamepad);
+
+    camera.x = player.x - 80;
+    camera.y = player.y - 80;
 
     camera.x = std.math.max(0, camera.x);
     camera.y = std.math.max(0, camera.y);
 
     maze.draw(camera);
 
-    //player.update(gamepad);
-
-    //player.draw();
+    player.draw(camera);
 }
