@@ -15,7 +15,8 @@ pub const Tile = enum(u8) {
     door,
 };
 
-data: []Tile,
+tiles: []Tile,
+roaches: []Roach,
 
 const maze_width = 70;
 const maze_height = 70;
@@ -29,8 +30,8 @@ const door_chance = 3;
 
 fn hline(self: Self, x: i32, y: i32, w: u31) void {
     const start = @intCast(usize, x + y * maze_width);
-    for (self.data[start .. start + w]) |*data| {
-        data.* = .wall;
+    for (self.tiles[start .. start + w]) |*tile| {
+        tile.* = .wall;
     }
 }
 
@@ -38,7 +39,7 @@ fn vline(self: Self, x: i32, y: i32, w: u31) void {
     var iy = y;
     while (iy < y + w) : (iy += 1) {
         const i = @intCast(usize, x + iy * maze_width);
-        self.data[i] = .wall;
+        self.tiles[i] = .wall;
     }
 }
 
@@ -93,7 +94,7 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
         const y = area.y + if (n < 2) gap else h;
 
         const ipixel: usize = @intCast(usize, y * maze_width + x);
-        self.data[ipixel] = .empty;
+        self.tiles[ipixel] = .empty;
     }
 
     for (bisects) |bisect| {
@@ -108,71 +109,89 @@ fn findNeighbors(self: Self, index: usize, of_type: Tile) NeighborSet {
 
     // north
     if (index > maze_width) {
-        const n = self.data[index - maze_width];
+        const n = self.tiles[index - maze_width];
         output.setValue(0, n == of_type);
     }
     // east
     if (index % maze_width != maze_width - 1) {
-        const e = self.data[index + 1];
+        const e = self.tiles[index + 1];
         output.setValue(1, e == of_type);
     }
     // south
     if (index < maze_width * (maze_height - 1)) {
-        const s = self.data[index + maze_width];
+        const s = self.tiles[index + maze_width];
         output.setValue(2, s == of_type);
     }
     // west
     if (index % maze_width > 0) {
-        const w = self.data[index - 1];
+        const w = self.tiles[index - 1];
         output.setValue(3, w == of_type);
     }
 
     return output;
 }
 
-fn makeBreakable(data: *Tile) void {
-    if (data.* == .wall) {
-        data.* = .breakable;
+fn makeBreakable(tile: *Tile) void {
+    if (tile.* == .wall) {
+        tile.* = .breakable;
     }
 }
 
 fn breakableNeighbors(self: Self, index: usize) void {
-    self.data[index] = .breakable;
+    self.tiles[index] = .breakable;
 
     if (index % maze_width > 0) {
-        makeBreakable(&self.data[index - 1]);
+        makeBreakable(&self.tiles[index - 1]);
     }
     if (index % maze_width != maze_width - 1) {
-        makeBreakable(&self.data[index + 1]);
+        makeBreakable(&self.tiles[index + 1]);
     }
 
     if (index > maze_width) {
-        makeBreakable(&self.data[index - maze_width]);
+        makeBreakable(&self.tiles[index - maze_width]);
     }
     if (index < maze_width * (maze_height - 1)) {
-        makeBreakable(&self.data[index + maze_width]);
+        makeBreakable(&self.tiles[index + maze_width]);
     }
 }
 
 pub fn generate(self: Self, seed: u32) void {
-    std.mem.set(Tile, self.data, .empty);
+    std.mem.set(Tile, self.tiles, .empty);
     var rng = std.rand.DefaultPrng.init(seed);
-    self.generateMaze(rng.random(), .{
+    const random = rng.random();
+
+    self.generateMaze(random, .{
         .x = 0,
         .y = 0,
         .w = maze_width,
         .h = maze_height,
     });
 
-    for (self.data) |*data, n| {
-        if (data.* == .empty) {
+    for (self.tiles) |*tile, n| {
+        if (tile.* == .empty) {
             const neighbors = self.findNeighbors(n, .wall);
 
             if ((neighbors.mask == 0b1010 or neighbors.mask == 0b0101) and n % door_chance == 0) {
-                data.* = .door;
+                tile.* = .door;
             } else if (neighbors.count() >= 3) {
                 self.breakableNeighbors(n);
             }
+        }
+    }
+
+    var nextIndex: usize = 0;
+    while (nextIndex < self.roaches.len) {
+        const tileIndex = random.uintLessThanBiased(usize, self.tiles.len);
+
+        if (self.tiles[tileIndex] == .empty) {
+            const x = @intCast(i32, tileIndex % maze_width) * 16 + 3;
+            const y = @intCast(i32, tileIndex / maze_width) * 16 + 5;
+            const dirtest = random.boolean();
+            self.roaches[nextIndex] = Roach{
+                .pos = .{ .x = x, .y = y },
+                .dir = .{ .x = if (dirtest) 1 else 0, .y = if (dirtest) 0 else 1 },
+            };
+            nextIndex += 1;
         }
     }
 }
@@ -191,7 +210,7 @@ pub fn draw(self: Self, camera: Point) void {
         const start = @intCast(usize, mx + my * maze_width);
         const end = @intCast(usize, maxx + my * maze_width);
 
-        for (self.data[start..end]) |tile, n| {
+        for (self.tiles[start..end]) |tile, n| {
             if (tile == .empty)
                 continue;
 
@@ -214,10 +233,10 @@ pub fn hit_breakable(self: *Self, area: Rect) void {
     const midpoint = area.midpoint().shrink(tile_size);
 
     const index = midpoint.x + midpoint.y * maze_width;
-    if (index > 0 and index < array_size) {
+    if (index > 0 and index < self.tiles.len) {
         const i = @intCast(usize, index);
-        if (self.data[i] == .breakable) {
-            self.data[i] = .crumbled;
+        if (self.tiles[i] == .breakable) {
+            self.tiles[i] = .crumbled;
         }
     }
 }
@@ -239,7 +258,7 @@ pub fn walkable(self: Self, area: Rect) bool {
     };
 
     for (vertecies) |vertex| {
-        const tile = self.data[@intCast(u32, vertex)];
+        const tile = self.tiles[@intCast(u32, vertex)];
 
         if (tile != .empty and tile != .crumbled) {
             return false;

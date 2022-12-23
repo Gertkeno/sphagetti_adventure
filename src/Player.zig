@@ -6,8 +6,6 @@ const Point = @import("Point.zig");
 const Rect = @import("Rect.zig");
 const Controller = @import("Controller.zig");
 
-extern var maze: Maze;
-
 const Self = @This();
 
 const attack_power_time: u8 = 40;
@@ -26,6 +24,7 @@ health: i32 = 160,
 attack_held: u8 = 0,
 attacking: u8 = 0,
 power_attack: bool = false,
+invincible: u8 = 0,
 
 facing: Point = Point.up,
 
@@ -39,25 +38,25 @@ pub fn to_rect(self: Self) Rect {
 }
 
 pub fn hitbox(self: Self) Rect {
-    const offset = self.pos.add(self.facing.scale(15));
+    const offset = self.pos.add(self.facing.scale(9));
     return Rect{
-        .x = offset.x,
-        .y = offset.y,
-        .w = 14,
-        .h = 14,
+        .x = offset.x - 3,
+        .y = offset.y - 2,
+        .w = 15,
+        .h = 15,
     };
 }
 
-pub fn update(self: *Self, controller: Controller) void {
+pub fn update(self: *Self, controller: Controller, maze: ?*Maze) void {
     const x = controller.x_axis();
     const y = controller.y_axis();
 
     self.pos.x += x;
-    if (!maze.walkable(self.to_rect())) {
+    if (maze != null and !maze.?.walkable(self.to_rect())) {
         self.pos.x -= if (x == 0) @as(i4, 5) else x;
     }
     self.pos.y += y;
-    if (!maze.walkable(self.to_rect())) {
+    if (maze != null and !maze.?.walkable(self.to_rect())) {
         self.pos.y -= if (y == 0) @as(i4, 5) else y;
     }
 
@@ -76,12 +75,16 @@ pub fn update(self: *Self, controller: Controller) void {
         self.attack_held = 0;
         self.attacking = attack_frames;
 
-        if (self.power_attack) {
-            maze.hit_breakable(self.hitbox());
+        if (maze != null and self.power_attack) {
+            maze.?.hit_breakable(self.hitbox());
         }
         // apply hitbox
     } else if (self.attacking > 0) {
         self.attacking -= 1;
+    }
+
+    if (self.invincible > 0) {
+        self.invincible -= 1;
     }
 }
 
@@ -103,13 +106,21 @@ pub fn draw(self: Self, camera: Point) void {
         circle(negative, 5);
     }
 
-    const power_flash = self.attack_held >= attack_power_time and self.attack_held & 0b10100 == 0;
-    w4.DRAW_COLORS.* = if (power_flash) 0x4120 else 0x1240;
-    w4.blit(&helena_pc, view.x, view.y, width, height, w4.BLIT_2BPP);
+    const invincible_flash = self.invincible & 0b110 == 0;
+    if (invincible_flash) {
+        const power_flash = self.attack_held >= attack_power_time and self.attack_held & 0b10100 == 0;
+        w4.DRAW_COLORS.* = if (power_flash) 0x4120 else 0x1240;
+        w4.blit(&helena_pc, view.x, view.y, width, height, w4.BLIT_2BPP);
+    }
 }
 
 pub fn collide_point(self: Self, x: i32, y: i32) bool {
     return (x > self.x) and (x < self.x + width) and (y > self.y) and (y < self.y + height);
+}
+
+pub fn take_damage(self: *Self, damage: u8) void {
+    self.health -= damage;
+    self.invincible = 50;
 }
 // helena_pc
 const helena_pc = [24]u8{ 0x0a, 0xa0, 0x19, 0x64, 0x27, 0xd8, 0x27, 0xd8, 0x55, 0x55, 0x79, 0x6d, 0xda, 0xa7, 0x49, 0x61, 0x05, 0x50, 0x15, 0x54, 0x01, 0x10, 0x01, 0x10 };
