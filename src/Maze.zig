@@ -1,8 +1,11 @@
 const w4 = @import("wasm4.zig");
 const std = @import("std");
+
 const Point = @import("Point.zig");
 const Rect = @import("Rect.zig");
 const Self = @This();
+
+const Roach = @import("Roach.zig");
 
 pub const Tile = enum(u8) {
     empty,

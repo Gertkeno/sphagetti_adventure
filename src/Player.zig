@@ -17,8 +17,8 @@ const width = 8;
 const height = 12;
 
 pos: Point = Point{
-    .x = 25 * 16 + 80,
-    .y = 25 * 16 + 80,
+    .x = 25 * 16 + 84,
+    .y = 25 * 16 + 83,
 },
 
 health: i32 = 160,
