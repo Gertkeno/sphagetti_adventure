@@ -3,6 +3,7 @@ const std = @import("std");
 
 const String = []const u8;
 const Self = @This();
+const Sprite = @import("Sprite.zig");
 
 const Dialogue = struct {
     progress: u8,
@@ -11,6 +12,7 @@ const Dialogue = struct {
 
 progress: u8 = 0,
 dialogue: []Dialogue,
+sprite: Sprite,
 
 fn dialog_descending(_: void, lhs: Dialogue, rhs: Dialogue) bool {
     return lhs.progress > rhs.progress;
@@ -41,7 +43,7 @@ fn char_count(dialogue: String) usize {
     return count;
 }
 
-pub fn init_comptime(comptime dialogue: String) Self {
+pub fn init_comptime(comptime dialogue: String, image: Sprite) Self {
     @setEvalBranchQuota(9999);
     const page_count = std.mem.count(u8, dialogue, "#");
 
@@ -96,6 +98,7 @@ pub fn init_comptime(comptime dialogue: String) Self {
 
     return Self{
         .dialogue = &pages,
+        .sprite = image,
     };
 }
 
@@ -105,15 +108,14 @@ pub fn talk(self: *Self, update_progress: ?u8) Reader {
 
     const head = for (self.dialogue) |dialog| {
         if (dialog.progress <= self.progress) {
-            break dialog.lines;
+            break dialog;
         }
-    } else {
-        unreachable;
-    };
+    } else self.dialogue[self.dialogue.len - 1];
 
     return Reader{
-        .readhead = head,
+        .readhead = head.lines,
         .readhead_index = 0,
         .chardraw = 0,
+        .talker_right = self.sprite,
     };
 }

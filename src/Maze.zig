@@ -8,6 +8,7 @@ pub const Tile = enum(u8) {
     empty,
     wall,
     breakable,
+    crumbled,
     door,
 };
 
@@ -20,6 +21,8 @@ pub const array_size = maze_width * maze_height;
 const tile_size = 16;
 pub const view_max_x = maze_width * tile_size - w4.SCREEN_SIZE;
 pub const view_max_y = maze_height * tile_size - w4.SCREEN_SIZE;
+
+const door_chance = 3;
 
 fn hline(self: Self, x: i32, y: i32, w: u31) void {
     const start = @intCast(usize, x + y * maze_width);
@@ -162,7 +165,7 @@ pub fn generate(self: Self, seed: u32) void {
         if (data.* == .empty) {
             const neighbors = self.findNeighbors(n, .wall);
 
-            if ((neighbors.mask == 0b1010 or neighbors.mask == 0b0101) and n % 9 == 0) {
+            if ((neighbors.mask == 0b1010 or neighbors.mask == 0b0101) and n % door_chance == 0) {
                 data.* = .door;
             } else if (neighbors.count() >= 3) {
                 self.breakableNeighbors(n);
@@ -195,10 +198,23 @@ pub fn draw(self: Self, camera: Point) void {
                 .wall => &wall_br,
                 .door => &door,
                 .breakable => &breakable,
-                else => unreachable,
+                .crumbled => &crumbled,
+                .empty => unreachable,
             };
 
             w4.blit(art, x, y, tile_size, tile_size, w4.BLIT_1BPP);
+        }
+    }
+}
+
+pub fn hit_breakable(self: *Self, area: Rect) void {
+    const midpoint = area.midpoint().shrink(tile_size);
+
+    const index = midpoint.x + midpoint.y * maze_width;
+    if (index > 0 and index < array_size) {
+        const i = @intCast(usize, index);
+        if (self.data[i] == .breakable) {
+            self.data[i] = .crumbled;
         }
     }
 }
@@ -220,7 +236,9 @@ pub fn walkable(self: Self, area: Rect) bool {
     };
 
     for (vertecies) |vertex| {
-        if (self.data[@intCast(u32, vertex)] != .empty) {
+        const tile = self.data[@intCast(u32, vertex)];
+
+        if (tile != .empty and tile != .crumbled) {
             return false;
         }
     }
@@ -231,3 +249,4 @@ pub fn walkable(self: Self, area: Rect) bool {
 const wall_br = [32]u8{ 0x80, 0x00, 0x5f, 0xfe, 0x3f, 0xfe, 0x6f, 0xfc, 0x7f, 0xfe, 0x7f, 0xfc, 0x7f, 0xfc, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfc, 0x7f, 0xf8, 0x5f, 0xe4, 0x2a, 0xd0, 0x00, 0x01 };
 const door = [32]u8{ 0xe0, 0x07, 0xdf, 0xfb, 0xbf, 0xfd, 0xbf, 0xfd, 0x7f, 0xfe, 0x7f, 0xfe, 0x1f, 0xfe, 0x7f, 0xf6, 0x7f, 0xea, 0x7f, 0xea, 0x7f, 0xf6, 0x1f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x00, 0x00 };
 const breakable = [32]u8{ 0xe2, 0x67, 0xd8, 0x8b, 0xdc, 0x5d, 0xbe, 0xbd, 0xbe, 0xbe, 0xbf, 0x7c, 0x7f, 0x7e, 0x7e, 0xfc, 0x7e, 0xfc, 0xfe, 0xfe, 0x7f, 0x7e, 0xff, 0xfe, 0x7e, 0xfe, 0x7f, 0x7c, 0x9f, 0xfa, 0xe0, 0x01 };
+const crumbled = [32]u8{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfd, 0x9f, 0xfb, 0xef, 0xff, 0xaf, 0xfd, 0xdf, 0xff, 0xff, 0xfd, 0xff, 0xfa, 0xdf, 0xfb, 0xbf, 0xfc, 0xff, 0xff, 0xff, 0xff, 0xff };

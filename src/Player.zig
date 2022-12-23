@@ -10,10 +10,11 @@ extern var maze: Maze;
 
 const Self = @This();
 
+const attack_power_time: u8 = 40;
 const attack_frames: u8 = 8;
 
 const width = 8;
-const height = 8;
+const height = 12;
 
 pos: Point = Point{
     .x = 25 * 16 + 80,
@@ -21,7 +22,10 @@ pos: Point = Point{
 },
 
 health: i32 = 160,
+
+attack_held: u8 = 0,
 attacking: u8 = 0,
+power_attack: bool = false,
 
 facing: Point = Point.up,
 
@@ -61,8 +65,20 @@ pub fn update(self: *Self, controller: Controller) void {
         self.facing = Point{ .x = x, .y = y };
     }
 
+    if (controller.held.x) {
+        self.attack_held += 1;
+        if (self.attack_held > 200) {
+            self.attack_held = attack_power_time;
+        }
+    }
     if (controller.released.x) {
+        self.power_attack = self.attack_held >= attack_power_time;
+        self.attack_held = 0;
         self.attacking = attack_frames;
+
+        if (self.power_attack) {
+            maze.hit_breakable(self.hitbox());
+        }
         // apply hitbox
     } else if (self.attacking > 0) {
         self.attacking -= 1;
@@ -77,32 +93,23 @@ fn circle(pos: Point, r: u31) void {
 pub fn draw(self: Self, camera: Point) void {
     const view = self.pos.sub(camera);
     if (self.attacking > 0) {
-        w4.DRAW_COLORS.* = 0x44;
-
+        w4.DRAW_COLORS.* = if (self.power_attack) 0x22 else 0x44;
         const midpoint = view.add(Point{ .x = width / 2, .y = height / 2 });
 
         const crecent = midpoint.add(self.facing.scale(8));
         const negative = midpoint.add(self.facing.scale(6));
         circle(crecent, 7);
-        w4.DRAW_COLORS.* = 0x21;
+        w4.DRAW_COLORS.* = if (self.power_attack) 0x31 else 0x21;
         circle(negative, 5);
     }
 
-    w4.DRAW_COLORS.* = 0x12;
-    w4.blit(&smiley, view.x, view.y, width, height, w4.BLIT_1BPP);
+    const power_flash = self.attack_held >= attack_power_time and self.attack_held & 0b10100 == 0;
+    w4.DRAW_COLORS.* = if (power_flash) 0x4120 else 0x1240;
+    w4.blit(&helena_pc, view.x, view.y, width, height, w4.BLIT_2BPP);
 }
-
-const smiley = [height]u8{
-    0b11000011,
-    0b10000001,
-    0b00100100,
-    0b00100100,
-    0b00000000,
-    0b00100100,
-    0b10011001,
-    0b11000011,
-};
 
 pub fn collide_point(self: Self, x: i32, y: i32) bool {
     return (x > self.x) and (x < self.x + width) and (y > self.y) and (y < self.y + height);
 }
+// helena_pc
+const helena_pc = [24]u8{ 0x0a, 0xa0, 0x19, 0x64, 0x27, 0xd8, 0x27, 0xd8, 0x55, 0x55, 0x79, 0x6d, 0xda, 0xa7, 0x49, 0x61, 0x05, 0x50, 0x15, 0x54, 0x01, 0x10, 0x01, 0x10 };
