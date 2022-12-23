@@ -8,7 +8,7 @@ const Self = @This();
 
 readhead: ?[]const String = null,
 readhead_index: usize = 0,
-chardraw: usize = 0,
+chardraw: u31 = 0,
 
 pub fn update(self: *Self, controls: Controller) bool {
     if (self.readhead == null) {
@@ -34,7 +34,7 @@ pub fn update(self: *Self, controls: Controller) bool {
                 return false;
             }
         } else {
-            self.chardraw = line.len << 2;
+            self.chardraw = @intCast(u31, line.len << 2);
         }
     }
 
@@ -42,19 +42,27 @@ pub fn update(self: *Self, controls: Controller) bool {
 }
 
 pub fn draw(self: Self) void {
-    // text border
-    w4.DRAW_COLORS.* = 0x31;
-    w4.rect(0, 138, 160, 160 - 138);
-
-    // letters
-    w4.DRAW_COLORS.* = 0x12;
     const line = self.readhead.?[self.readhead_index];
     const len = std.math.min(self.chardraw >> 2, line.len);
 
-    if (len > 19) {
-        w4.text(line[0..19], 4, 140);
-        w4.text(line[19..len], 4, 150);
-    } else {
-        w4.text(line[0..len], 4, 150);
+    const lines = len / 19 + 1;
+    const lines_height = lines * 10 + 2;
+
+    // text border
+    w4.DRAW_COLORS.* = 0x31;
+    w4.rect(0, 160 - lines_height, 160, lines_height);
+
+    // letters
+    w4.DRAW_COLORS.* = 0x12;
+
+    const y = 160 - lines_height + 2;
+    var i: u31 = 0;
+    while (i < lines) {
+        defer i += 1;
+
+        const start = i * 19;
+        const end = std.math.min(i * 19 + 19, len);
+
+        w4.text(line[start..end], 4, y + i * 10);
     }
 }

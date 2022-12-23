@@ -34,6 +34,16 @@ pub fn to_rect(self: Self) Rect {
     };
 }
 
+pub fn hitbox(self: Self) Rect {
+    const offset = self.pos.add(self.facing.scale(15));
+    return Rect{
+        .x = offset.x,
+        .y = offset.y,
+        .w = 14,
+        .h = 14,
+    };
+}
+
 pub fn update(self: *Self, controller: Controller) void {
     const x = controller.x_axis();
     const y = controller.y_axis();
