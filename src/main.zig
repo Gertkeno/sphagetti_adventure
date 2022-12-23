@@ -6,7 +6,7 @@ const GameMode = @import("gamemode/Gamemode.zig").GameModes;
 const Controller = @import("Controller.zig");
 
 var gamemode = GameMode{
-    .labyrinth = .{},
+    .main_menu = .{},
 };
 
 var gamepad = Controller{};
