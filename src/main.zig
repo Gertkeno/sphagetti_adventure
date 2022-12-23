@@ -5,14 +5,16 @@ const Maze = @import("Maze.zig");
 const Player = @import("Player.zig");
 const Controller = @import("Controller.zig");
 const Quest = @import("Quest.zig");
+const Reader = @import("DialogueReader.zig");
 
 const Point = @import("Point.zig");
 
 var kiki = Quest.init_comptime(@embedFile("quest/kiki.txt"));
 
-var gamepad: Controller = .{};
-var player: Player = .{};
+var gamepad = Controller{};
+var player = Player{};
 var camera = Point.zero;
+var reader = Reader{};
 
 const palette = [4]u32{
     0xFFebe5ce,
@@ -29,35 +31,31 @@ export var maze = Maze{
 export fn start() void {
     std.mem.copy(u32, w4.PALETTE, &palette);
     //w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
+    maze.generate(2121);
 }
 
 export fn update() void {
-    w4.DRAW_COLORS.* = 0x02;
-
     gamepad.update(w4.GAMEPAD1.*);
-    if (gamepad.held.x) {
-        w4.DRAW_COLORS.* = 0x04;
+
+    const draw_text = reader.update(gamepad);
+    if (!draw_text) {
+        if (gamepad.released.y) {
+            reader = kiki.talk(0);
+        }
+
+        player.update(gamepad);
+
+        camera = player.pos.sub(Point.one.scale(80));
+
+        camera.x = std.math.clamp(camera.x, 0, Maze.view_max_x);
+        camera.y = std.math.clamp(camera.y, 0, Maze.view_max_y);
     }
-
-    if (kiki.update_draw(gamepad)) {
-        return;
-    }
-
-    if (gamepad.released.y) {
-        kiki.talk(0);
-    } else if (gamepad.released.x) {
-        maze.generate(@bitCast(u32, camera.x));
-    }
-
-    player.update(gamepad);
-
-    camera.x = player.x - 80;
-    camera.y = player.y - 80;
-
-    camera.x = std.math.max(0, camera.x);
-    camera.y = std.math.max(0, camera.y);
 
     maze.draw(camera);
 
     player.draw(camera);
+
+    if (draw_text) {
+        reader.draw();
+    }
 }

@@ -18,6 +18,8 @@ const maze_height = 70;
 pub const array_size = maze_width * maze_height;
 
 const tile_size = 16;
+pub const view_max_x = maze_width * tile_size - w4.SCREEN_SIZE;
+pub const view_max_y = maze_height * tile_size - w4.SCREEN_SIZE;
 
 fn hline(self: Self, x: i32, y: i32, w: u31) void {
     const start = @intCast(usize, x + y * maze_width);
@@ -218,7 +220,7 @@ pub fn walkable(self: Self, area: Rect) bool {
     };
 
     for (vertecies) |vertex| {
-        if (self.data[@bitCast(u32, vertex)] != .empty) {
+        if (self.data[@intCast(u32, vertex)] != .empty) {
             return false;
         }
     }
