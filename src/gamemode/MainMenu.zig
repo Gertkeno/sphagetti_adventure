@@ -25,9 +25,9 @@ pub fn update(self: *@This(), gamepad: Controller) bool {
     }
 
     w4.text(">>", 2, if (self.seleting_new_game) 100 else 110);
-    w4.text("Play!", 18, 100);
-    w4.text("Set seed:", 18, 110);
-    w4.text(self.seed_text_buffer[0..self.seed_text_len], 20 + 9 * 8, 110);
+    w4.text("\x80  Play!", 18, 100);
+    w4.text("\x84\x85 Seed", 18, 110);
+    w4.text(self.seed_text_buffer[0..self.seed_text_len], 20 + 8 * 8, 110);
 
     return false;
 }
