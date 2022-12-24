@@ -14,8 +14,11 @@ const Roach = @import("../Roach.zig");
 player: Player = .{},
 camera: Point = Point.zero,
 reader: Reader = .{},
-active_roaches: usize = roach_data.len,
+active_roaches: u16 = roach_data.len,
 respawn_time: u16 = 0,
+torches_got: u2 = 0,
+keys: u8 = 0,
+key_text: [2]u8 = "00".*,
 
 const roach_respawn_time = 25 * 60;
 var kiki = Quest.init_comptime(@embedFile("../quest/kiki.txt"), kiki_img);
@@ -33,7 +36,13 @@ pub var maze = Maze{
     .roaches = &roach_data,
 };
 
-pub fn update(self: *@This(), gamepad: Controller) void {
+const Self = @This();
+
+fn total_keys(self: Self) u8 {
+    return self.keys / 4;
+}
+
+pub fn update(self: *Self, gamepad: Controller) void {
     const draw_text = self.reader.update(gamepad);
     if (!draw_text) {
         if (gamepad.released.y) {
@@ -41,6 +50,9 @@ pub fn update(self: *@This(), gamepad: Controller) void {
         }
 
         self.player.update(gamepad, &maze);
+        if (maze.hit_torch(self.player.to_rect())) {
+            self.torches_got += 1;
+        }
 
         self.camera = self.player.pos.sub(Point.one.scale(80));
 
@@ -54,10 +66,26 @@ pub fn update(self: *@This(), gamepad: Controller) void {
             const hitbox = self.player.hitbox();
             for (roach_data[0..self.active_roaches]) |roach, n| {
                 if (roach.to_rect().collides(hitbox)) {
+                    if (self.keys < 255) {
+                        self.keys += 1;
+                        _ = std.fmt.formatIntBuf(&self.key_text, self.total_keys(), 10, .lower, .{
+                            .width = 2,
+                            .fill = '0',
+                        });
+                    }
                     self.active_roaches -= 1;
+                    self.respawn_time = std.math.min(self.respawn_time, roach_respawn_time - 60);
                     std.mem.swap(Roach, &roach_data[self.active_roaches], &roach_data[n]);
                     break;
                 }
+            }
+
+            if (self.total_keys() > 0 and maze.hit_door(hitbox)) {
+                self.keys -= 4;
+                _ = std.fmt.formatIntBuf(&self.key_text, self.total_keys(), 10, .lower, .{
+                    .width = 2,
+                    .fill = '0',
+                });
             }
         } else if (self.player.invincible == 0) {
             const player = self.player.to_rect();
@@ -90,5 +118,25 @@ pub fn update(self: *@This(), gamepad: Controller) void {
 
     if (draw_text) {
         self.reader.draw();
+    } else {
+        // hud
+        const x = 160 - 8 * 2 - 4;
+        const w = 160 - x;
+        w4.DRAW_COLORS.* = 0x31;
+        w4.rect(x - 2, 150, w + 3, 11);
+        w4.DRAW_COLORS.* = 0x03;
+        w4.blit(&key, x, 152, 8, 3, w4.BLIT_ROTATE | w4.BLIT_FLIP_X);
+
+        w4.DRAW_COLORS.* = 0x04;
+        const key_segment = (self.keys % 4) * 2;
+        w4.blitSub(&key, x, 152, key_segment, 3, 0, 0, 8, w4.BLIT_ROTATE | w4.BLIT_FLIP_X);
+
+        w4.text(&self.key_text, x + 4, 152);
     }
 }
+
+// key
+const key_width = 8;
+const key_height = 3;
+const key_flags = 0; // BLIT_1BPP
+const key = [3]u8{ 0x9d, 0x40, 0x3a };

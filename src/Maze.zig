@@ -12,7 +12,10 @@ pub const Tile = enum(u8) {
     wall,
     breakable,
     crumbled,
+    torch_lit,
+    torch_unlit,
     door,
+    door_open,
 };
 
 tiles: []Tile,
@@ -99,6 +102,18 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
 
     for (bisects) |bisect| {
         self.generateMaze(rng, bisect);
+    }
+
+    const first = area.x == 0 and area.w == maze_width;
+    if (first) {
+        const skip = rng.uintLessThanBiased(u3, 4);
+        for (bisects) |bisect, n| {
+            if (n == skip)
+                continue;
+            const midpoint = bisect.midpoint();
+            const mi = @intCast(usize, midpoint.x + midpoint.y * maze_width);
+            self.tiles[mi] = .torch_lit;
+        }
     }
 }
 
@@ -219,26 +234,46 @@ pub fn draw(self: Self, camera: Point) void {
             const art: [*]const u8 = switch (tile) {
                 .wall => &wall_br,
                 .door => &door,
+                .door_open => &door_open,
                 .breakable => &breakable,
                 .crumbled => &crumbled,
+                .torch_lit => &brazier_lit,
+                .torch_unlit => &brazier_unlit,
                 .empty => unreachable,
             };
+
+            w4.DRAW_COLORS.* = if (tile == .torch_lit) 0x12 else 0x13;
 
             w4.blit(art, x, y, tile_size, tile_size, w4.BLIT_1BPP);
         }
     }
 }
 
-pub fn hit_breakable(self: *Self, area: Rect) void {
+fn hit_to(self: *Self, area: Rect, from: Tile, to: Tile) bool {
     const midpoint = area.midpoint().shrink(tile_size);
 
     const index = midpoint.x + midpoint.y * maze_width;
     if (index > 0 and index < self.tiles.len) {
         const i = @intCast(usize, index);
-        if (self.tiles[i] == .breakable) {
-            self.tiles[i] = .crumbled;
+        if (self.tiles[i] == from) {
+            self.tiles[i] = to;
+            return true;
         }
     }
+
+    return false;
+}
+
+pub fn hit_breakable(self: *Self, area: Rect) bool {
+    return self.hit_to(area, .breakable, .crumbled);
+}
+
+pub fn hit_torch(self: *Self, area: Rect) bool {
+    return self.hit_to(area, .torch_lit, .torch_unlit);
+}
+
+pub fn hit_door(self: *Self, area: Rect) bool {
+    return self.hit_to(area, .door, .door_open);
 }
 
 pub fn walkable(self: Self, area: Rect) bool {
@@ -260,8 +295,11 @@ pub fn walkable(self: Self, area: Rect) bool {
     for (vertecies) |vertex| {
         const tile = self.tiles[@intCast(u32, vertex)];
 
-        if (tile != .empty and tile != .crumbled) {
-            return false;
+        switch (tile) {
+            .empty, .crumbled, .torch_lit, .torch_unlit, .door_open => {},
+            .wall, .door, .breakable => {
+                return false;
+            },
         }
     }
 
@@ -272,3 +310,6 @@ const wall_br = [32]u8{ 0x80, 0x00, 0x5f, 0xfe, 0x3f, 0xfe, 0x6f, 0xfc, 0x7f, 0x
 const door = [32]u8{ 0xe0, 0x07, 0xdf, 0xfb, 0xbf, 0xfd, 0xbf, 0xfd, 0x7f, 0xfe, 0x7f, 0xfe, 0x1f, 0xfe, 0x7f, 0xf6, 0x7f, 0xea, 0x7f, 0xea, 0x7f, 0xf6, 0x1f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x00, 0x00 };
 const breakable = [32]u8{ 0xe2, 0x67, 0xd8, 0x8b, 0xdc, 0x5d, 0xbe, 0xbd, 0xbe, 0xbe, 0xbf, 0x7c, 0x7f, 0x7e, 0x7e, 0xfc, 0x7e, 0xfc, 0xfe, 0xfe, 0x7f, 0x7e, 0xff, 0xfe, 0x7e, 0xfe, 0x7f, 0x7c, 0x9f, 0xfa, 0xe0, 0x01 };
 const crumbled = [32]u8{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfd, 0x9f, 0xfb, 0xef, 0xff, 0xaf, 0xfd, 0xdf, 0xff, 0xff, 0xfd, 0xff, 0xfa, 0xdf, 0xfb, 0xbf, 0xfc, 0xff, 0xff, 0xff, 0xff, 0xff };
+const brazier_unlit = [32]u8{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xdf, 0xfb, 0xc1, 0x83, 0xe0, 0x07, 0xf8, 0x1f, 0xfe, 0x7f, 0xff, 0xff, 0xff, 0xff };
+const brazier_lit = [32]u8{ 0xff, 0x7f, 0xfe, 0x7f, 0xf8, 0x7f, 0xf9, 0xff, 0xf3, 0x1f, 0xf2, 0x0f, 0xf2, 0x4f, 0xf3, 0xcf, 0xf8, 0x1f, 0xdc, 0x7b, 0xc1, 0x83, 0xe0, 0x07, 0xf8, 0x1f, 0xfe, 0x7f, 0xff, 0xff, 0xff, 0xff };
+const door_open = [32]u8{ 0xcf, 0xff, 0xcf, 0xff, 0xb7, 0xff, 0xb7, 0xff, 0x7b, 0xff, 0x7b, 0xff, 0x3b, 0xff, 0x7b, 0xff, 0x7b, 0xff, 0x7b, 0xff, 0x7b, 0xff, 0x3b, 0xff, 0x7b, 0xff, 0x7b, 0xff, 0x73, 0xff, 0x07, 0xff };

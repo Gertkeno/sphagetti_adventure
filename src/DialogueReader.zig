@@ -16,7 +16,7 @@ readhead: ?[]const String = null,
 readhead_index: usize = 0,
 chardraw: u31 = 0,
 
-talker_left: ?Sprite = helena_img,
+talker_left: bool = true,
 talker_right: ?Sprite = null,
 
 pub fn update(self: *Self, controls: Controller) bool {
@@ -51,8 +51,8 @@ pub fn update(self: *Self, controls: Controller) bool {
 }
 
 pub fn draw(self: Self) void {
-    if (self.talker_left) |talker| {
-        talker.draw_bl(0, 148);
+    if (self.talker_left) {
+        helena_img.draw_bl(0, 148);
     }
     if (self.talker_right) |talker| {
         talker.draw_br(160, 148);

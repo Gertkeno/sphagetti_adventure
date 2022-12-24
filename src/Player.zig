@@ -19,10 +19,10 @@ pos: Point = Point{
     .y = 25 * 16 + 83,
 },
 
-health: i32 = 160,
+health: i16 = 160,
 
 attack_held: u8 = 0,
-attacking: u8 = 0,
+attacking: u4 = 0,
 power_attack: bool = false,
 invincible: u8 = 0,
 
@@ -76,7 +76,7 @@ pub fn update(self: *Self, controller: Controller, maze: ?*Maze) void {
         self.attacking = attack_frames;
 
         if (maze != null and self.power_attack) {
-            maze.?.hit_breakable(self.hitbox());
+            _ = maze.?.hit_breakable(self.hitbox());
         }
         // apply hitbox
     } else if (self.attacking > 0) {
@@ -121,6 +121,10 @@ pub fn collide_point(self: Self, x: i32, y: i32) bool {
 pub fn take_damage(self: *Self, damage: u8) void {
     self.health -= damage;
     self.invincible = 50;
+}
+
+pub fn alive(self: Self) bool {
+    return self.health > 0;
 }
 // helena_pc
 const helena_pc = [24]u8{ 0x0a, 0xa0, 0x19, 0x64, 0x27, 0xd8, 0x27, 0xd8, 0x55, 0x55, 0x79, 0x6d, 0xda, 0xa7, 0x49, 0x61, 0x05, 0x50, 0x15, 0x54, 0x01, 0x10, 0x01, 0x10 };
