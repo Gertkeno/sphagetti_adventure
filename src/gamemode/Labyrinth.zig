@@ -10,6 +10,8 @@ const Controller = @import("../Controller.zig");
 const Point = @import("../Point.zig");
 const Roach = @import("../Roach.zig");
 
+const Self = @This();
+
 player: Player = .{},
 camera: Point = Point.zero,
 active_roaches: u16 = roach_data.len,
@@ -28,8 +30,6 @@ pub var maze = Maze{
     .roaches = &roach_data,
 };
 
-const Self = @This();
-
 const key_pieces = 4;
 fn total_keys(self: Self) u8 {
     return self.keys / key_pieces;
@@ -42,7 +42,7 @@ fn update_key_counter(self: *Self) void {
     });
 }
 
-pub fn update(self: *Self, gamepad: Controller) void {
+pub fn update(self: *Self, gamepad: Controller) bool {
     self.player.update(gamepad, &maze);
     if (maze.hit_torch(self.player.to_rect())) {
         self.torches_got += 1;
@@ -129,6 +129,8 @@ pub fn update(self: *Self, gamepad: Controller) void {
             w4.blit(&flame_collect, tx, 143, flame_collect_width, flame_collect_height, flame_collect_flags);
         }
     }
+
+    return self.torches_got == 3;
 }
 
 // key
