@@ -75,7 +75,6 @@ pub fn update(self: *Self, gamepad: Controller) void {
                         });
                     }
                     self.active_roaches -= 1;
-                    self.respawn_time = std.math.min(self.respawn_time, roach_respawn_time - 60);
                     std.mem.swap(Roach, &roach_data[self.active_roaches], &roach_data[n]);
                     break;
                 }
@@ -102,6 +101,7 @@ pub fn update(self: *Self, gamepad: Controller) void {
 
         if (self.respawn_time > roach_respawn_time) {
             if (self.active_roaches < roach_data.len) {
+                std.mem.swap(Roach, &roach_data[roach_data.len - 1], &roach_data[self.active_roaches]);
                 self.active_roaches += 1;
             }
             self.respawn_time = 0;
