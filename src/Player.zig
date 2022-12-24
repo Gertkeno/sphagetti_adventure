@@ -70,7 +70,7 @@ pub fn update(self: *Self, controller: Controller, maze: ?*Maze) void {
             self.attack_held = attack_power_time;
         }
     }
-    if (controller.released.x) {
+    if (controller.released.x or controller.released.y) {
         self.power_attack = self.attack_held >= attack_power_time;
         self.attack_held = 0;
         self.attacking = attack_frames;

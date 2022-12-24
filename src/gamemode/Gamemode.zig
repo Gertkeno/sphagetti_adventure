@@ -4,10 +4,12 @@ const Controller = @import("../Controller.zig");
 // game modes
 const Labyrinth = @import("Labyrinth.zig");
 const MainMenu = @import("MainMenu.zig");
+const Cutscene = @import("Cutscene.zig");
 
 pub const GameModes = union(enum) {
     labyrinth: Labyrinth,
     main_menu: MainMenu,
+    cutscene: Cutscene,
 
     const Self = @This();
     pub fn update(self: *Self, controller: Controller) void {
@@ -15,7 +17,16 @@ pub const GameModes = union(enum) {
             .labyrinth => @ptrCast(*Labyrinth, self).update(controller),
             .main_menu => {
                 if (@ptrCast(*MainMenu, self).update(controller)) {
-                    self.* = GameModes{ .labyrinth = Labyrinth{} };
+                    self.* = GameModes{ .cutscene = Cutscene{ .from = .main_menu } };
+                }
+            },
+            .cutscene => {
+                const ptr = @ptrCast(*Cutscene, self);
+                if (ptr.update(controller)) {
+                    self.* = switch (ptr.from) {
+                        .main_menu => GameModes{ .labyrinth = Labyrinth{} },
+                        else => unreachable,
+                    };
                 }
             },
         }
@@ -23,7 +34,7 @@ pub const GameModes = union(enum) {
 };
 
 comptime {
-    const too_big = 100;
+    const too_big = 80;
     if (@sizeOf(GameModes) > too_big) {
         for (meta.fields(GameModes)) |field| {
             if (@sizeOf(field.field_type) > too_big) {

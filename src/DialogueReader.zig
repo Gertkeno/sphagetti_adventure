@@ -12,12 +12,12 @@ pub const helena_img = Sprite{
     .data = &helena_portrait,
 };
 
-readhead: ?[]const String = null,
+readhead: ?String = null,
 readhead_index: usize = 0,
 chardraw: u31 = 0,
 
-talker_left: bool = true,
-talker_right: ?Sprite = null,
+//talker_left: bool = true,
+//talker_right: ?Sprite = null,
 
 pub fn update(self: *Self, controls: Controller) bool {
     if (self.readhead == null) {
@@ -26,7 +26,8 @@ pub fn update(self: *Self, controls: Controller) bool {
     const readhead = self.readhead.?;
 
     self.chardraw += 1;
-    const line = readhead[self.readhead_index];
+    const lineend = std.mem.indexOfScalarPos(u8, readhead, self.readhead_index, '\n') orelse readhead.len;
+    const line = readhead[self.readhead_index..lineend];
     if (line.len <= 1) {
         self.readhead = null;
         return false;
@@ -37,7 +38,7 @@ pub fn update(self: *Self, controls: Controller) bool {
         if (len == line.len) {
             self.chardraw = 0;
 
-            self.readhead_index += 1;
+            self.readhead_index = lineend + 1;
             if (self.readhead_index >= readhead.len) {
                 self.readhead = null;
                 return false;
@@ -51,13 +52,21 @@ pub fn update(self: *Self, controls: Controller) bool {
 }
 
 pub fn draw(self: Self) void {
-    if (self.talker_left) {
-        helena_img.draw_bl(0, 148);
+    //if (self.talker_left) {
+    //helena_img.draw_bl(0, 148);
+    //}
+    //if (self.talker_right) |talker| {
+    //talker.draw_br(160, 148);
+    //}
+    if (self.readhead == null) {
+        return;
     }
-    if (self.talker_right) |talker| {
-        talker.draw_br(160, 148);
-    }
-    const line = self.readhead.?[self.readhead_index];
+
+    const readhead = self.readhead.?;
+
+    const lineend = std.mem.indexOfScalarPos(u8, readhead, self.readhead_index, '\n') orelse readhead.len;
+    const line = readhead[self.readhead_index..lineend];
+
     const len = std.math.min(self.chardraw >> 2, line.len);
 
     const lines = len / 19 + 1;

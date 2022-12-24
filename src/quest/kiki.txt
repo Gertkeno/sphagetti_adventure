@@ -1,6 +1,0 @@
-#00
-hello i am cat
-have a good cat dayand so forth
-
-#10
-you have completed the quest
