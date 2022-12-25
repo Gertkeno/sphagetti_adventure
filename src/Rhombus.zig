@@ -14,17 +14,17 @@ area: Rect = .{
     .h = 32,
 },
 
-dir: Point = .{
-    .x = 1,
-    .y = 1,
-},
+dir: Point = Point.one,
 
 timer: u16 = 0,
 
-health: u8 = 6,
+health: u8 = 18,
 invincible: u8 = 0,
 
 pub fn take_damage(self: *Self, dmg: u8) void {
+    if (!self.is_vulnerable())
+        return;
+
     if (self.health > dmg) {
         self.health -= dmg;
     } else {

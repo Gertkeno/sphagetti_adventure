@@ -47,7 +47,7 @@ pub const GameModes = union(enum) {
 };
 
 comptime {
-    const too_big = 80;
+    const too_big = 100;
     if (@sizeOf(GameModes) > too_big) {
         for (meta.fields(GameModes)) |field| {
             if (@sizeOf(field.field_type) > too_big) {
