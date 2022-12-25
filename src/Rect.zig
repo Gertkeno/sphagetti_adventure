@@ -3,8 +3,8 @@ const Point = @import("Point.zig");
 
 x: i32,
 y: i32,
-w: u31,
-h: u31,
+w: u16,
+h: u16,
 
 pub fn collides(a: Self, b: Self) bool {
     if (a.x + a.w < b.x) {

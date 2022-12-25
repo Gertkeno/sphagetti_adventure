@@ -26,6 +26,9 @@ const scenes = [_]Scene{
     Scene.init_comptime(@embedFile("fight.txt"), .{
         .fight_img = &panel_4,
     }),
+    Scene.init_comptime(@embedFile("youwin.txt"), .{
+        .win_img = &panel_5_you_win,
+    }),
 };
 
 from: enum(u4) {
@@ -68,7 +71,9 @@ pub fn update(self: *Self, controller: Controller) bool {
     // update sequences
     switch (seq) {
         .new_slide => {
-            if (self.fade_outer > 0) {
+            if (controller.released.x or controller.released.y) {
+                self.fade_outer = 0;
+            } else if (self.fade_outer > 0) {
                 self.fade_outer -= 1;
             } else {
                 self.sequence_itr += 1;
@@ -78,7 +83,9 @@ pub fn update(self: *Self, controller: Controller) bool {
         .text => {
             if (!self.reader.update(controller)) {
                 self.fade_outer += 1;
-                if (self.fade_outer >= fade_out_time) {
+                if (controller.released.x or controller.released.y) {
+                    self.fade_outer = fade_out_time - 1;
+                } else if (self.fade_outer >= fade_out_time) {
                     self.sequence_itr += 1;
                     self.init_next = true;
                     self.fade_outer = fade_out_time - 1;

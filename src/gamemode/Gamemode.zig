@@ -35,9 +35,10 @@ pub const GameModes = union(enum) {
                 const ptr = @ptrCast(*Cutscene, self);
                 if (ptr.update(controller)) {
                     self.* = switch (ptr.from) {
-                        .main_menu => GameModes{ .labyrinth = Labyrinth{} },
+                        //.main_menu => GameModes{ .labyrinth = Labyrinth{} },
+                        .main_menu => GameModes{ .boss_fight = BossFight{} },
                         .labyrinth => GameModes{ .boss_fight = BossFight{} },
-                        .boss_fight => unreachable,
+                        .boss_fight => GameModes{ .main_menu = MainMenu{} },
                     };
                 }
             },

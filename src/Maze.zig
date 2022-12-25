@@ -31,14 +31,14 @@ pub const view_max_y = maze_height * tile_size - w4.SCREEN_SIZE;
 
 const door_chance = 3;
 
-fn hline(self: Self, x: i32, y: i32, w: u31) void {
+fn hline(self: Self, x: i32, y: i32, w: u16) void {
     const start = @intCast(usize, x + y * maze_width);
     for (self.tiles[start .. start + w]) |*tile| {
         tile.* = .wall;
     }
 }
 
-fn vline(self: Self, x: i32, y: i32, w: u31) void {
+fn vline(self: Self, x: i32, y: i32, w: u16) void {
     var iy = y;
     while (iy < y + w) : (iy += 1) {
         const i = @intCast(usize, x + iy * maze_width);
@@ -51,15 +51,15 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
     if (area.w < room_scale * 3 or area.h < room_scale * 3) {
         return;
     }
-    const w = rng.intRangeLessThanBiased(u31, room_scale, area.w - room_scale);
-    const h = rng.intRangeLessThanBiased(u31, room_scale, area.h - room_scale);
+    const w = rng.intRangeLessThanBiased(u16, room_scale, area.w - room_scale);
+    const h = rng.intRangeLessThanBiased(u16, room_scale, area.h - room_scale);
 
-    const gaps = [4]u31{
-        rng.uintLessThanBiased(u31, h),
-        rng.intRangeLessThanBiased(u31, h + 1, area.h),
+    const gaps = [4]u16{
+        rng.uintLessThanBiased(u16, h),
+        rng.intRangeLessThanBiased(u16, h + 1, area.h),
 
-        rng.uintLessThanBiased(u31, w),
-        rng.intRangeLessThanBiased(u31, w + 1, area.w),
+        rng.uintLessThanBiased(u16, w),
+        rng.intRangeLessThanBiased(u16, w + 1, area.w),
     };
 
     const bisects = [4]Rect{
@@ -72,20 +72,20 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
         Rect{
             .x = area.x + w,
             .y = area.y,
-            .w = @intCast(u31, area.w - w),
+            .w = @intCast(u16, area.w - w),
             .h = h,
         },
         Rect{
             .x = area.x,
             .y = area.y + h,
             .w = w,
-            .h = @intCast(u31, area.h - h),
+            .h = @intCast(u16, area.h - h),
         },
         Rect{
             .x = area.x + w,
             .y = area.y + h,
-            .w = @intCast(u31, area.w - w),
-            .h = @intCast(u31, area.h - h),
+            .w = @intCast(u16, area.w - w),
+            .h = @intCast(u16, area.h - h),
         },
     };
 

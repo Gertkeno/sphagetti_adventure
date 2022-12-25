@@ -123,7 +123,7 @@ pub fn take_damage(self: *Self, damage: u8) void {
     self.invincible = 50;
 }
 
-pub fn alive(self: Self) bool {
+pub fn is_alive(self: Self) bool {
     return self.health > 0;
 }
 // helena_pc
