@@ -99,9 +99,11 @@ pub fn draw(self: Self, camera: Point) void {
         w4.DRAW_COLORS.* = if (self.power_attack) 0x22 else 0x44;
         const midpoint = view.add(Point{ .x = width / 2, .y = height / 2 });
 
-        const crecent = midpoint.add(self.facing.scale(8));
+        // the attack is made with two circles one to fill in and the other to subtract, forming a
+        // crecent.
+        const fill = midpoint.add(self.facing.scale(8));
         const negative = midpoint.add(self.facing.scale(6));
-        circle(crecent, 7);
+        circle(fill, 7);
         w4.DRAW_COLORS.* = if (self.power_attack) 0x31 else 0x21;
         circle(negative, 5);
     }
@@ -114,10 +116,6 @@ pub fn draw(self: Self, camera: Point) void {
     }
 }
 
-pub fn collide_point(self: Self, x: i32, y: i32) bool {
-    return (x > self.x) and (x < self.x + width) and (y > self.y) and (y < self.y + height);
-}
-
 pub fn take_damage(self: *Self, damage: u8) void {
     self.health -= damage;
     self.invincible = 50;
@@ -126,5 +124,6 @@ pub fn take_damage(self: *Self, damage: u8) void {
 pub fn is_alive(self: Self) bool {
     return self.health > 0;
 }
+
 // helena_pc
 const helena_pc = [24]u8{ 0x0a, 0xa0, 0x19, 0x64, 0x27, 0xd8, 0x27, 0xd8, 0x55, 0x55, 0x79, 0x6d, 0xda, 0xa7, 0x49, 0x61, 0x05, 0x50, 0x15, 0x54, 0x01, 0x10, 0x01, 0x10 };

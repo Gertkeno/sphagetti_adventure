@@ -17,6 +17,8 @@ pub fn update(self: *@This(), gamepad: Controller) bool {
             self.seed +%= x;
             self.seed_text_len = std.fmt.formatIntBuf(&self.seed_text_buffer, @bitCast(u32, self.seed), 16, .upper, .{});
         } else if (gamepad.released.x) {
+            // starting the game requires the maze to be generated before we set the game state
+            // to labyrinth. return true; puts us in a cutscene, then the labyrinth.
             Labyrinth.maze.generate(@bitCast(u32, self.seed));
             return true;
         } else if (gamepad.released.y) {
@@ -24,16 +26,16 @@ pub fn update(self: *@This(), gamepad: Controller) bool {
             self.showing_help = true;
         }
 
-        if (!self.showing_help) {
-            w4.DRAW_COLORS.* = 0x3241;
-            w4.blit(&title_screen_sa, 20, 0, 120, 120, title_screen_sa_flags);
+        // drawing game options play/seed select/help
+        w4.DRAW_COLORS.* = 0x3241;
+        w4.blit(&title_screen_sa, 20, 0, 120, 120, title_screen_sa_flags);
 
-            w4.DRAW_COLORS.* = 0x13;
-            w4.text("\x80  Play!", 18, 100);
-            w4.text("\x84\x85 World", 18, 110);
-            w4.text("\x81  Help!", 18, 130);
-            w4.text(self.seed_text_buffer[0..self.seed_text_len], 20 + 9 * 8, 110);
-        }
+        w4.DRAW_COLORS.* = 0x13;
+        w4.text("\x80  Play!", 18, 100);
+        w4.text("\x84\x85 World", 18, 110);
+        w4.text(self.seed_text_buffer[0..self.seed_text_len], 20 + 9 * 8, 110);
+
+        w4.text("\x81  Help!", 18, 130);
     } else {
         // help screen
         w4.text("Roaches have keys!", 2, 2);

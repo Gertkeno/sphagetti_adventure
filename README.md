@@ -1,6 +1,9 @@
-# helena_quest
+# Sphagetti Adventure
 
-A game written in Zig for the [WASM-4](https://wasm4.org) fantasy console.
+A game for Helena, Christmas 2022.
+
+Written in [Zig 0.9.1](https://ziglang.org/download/) for the
+[WASM-4](https://wasm4.org) fantasy console.
 
 ## Building
 
@@ -15,12 +18,3 @@ Then run it with:
 ```shell
 w4 run zig-out/lib/cart.wasm
 ```
-
-For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.org/docs/getting-started/setup?code-lang=zig#quickstart).
-
-## Links
-
-- [Documentation](https://wasm4.org/docs): Learn more about WASM-4.
-- [Snake Tutorial](https://wasm4.org/docs/tutorials/snake/goal): Learn how to build a complete game
-  with a step-by-step tutorial.
-- [GitHub](https://github.com/aduros/wasm4): Submit an issue or PR. Contributions are welcome!

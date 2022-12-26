@@ -31,6 +31,7 @@ pub const view_max_y = maze_height * tile_size - w4.SCREEN_SIZE;
 
 const door_chance = 3;
 
+// write a line of walls horizontally
 fn hline(self: Self, x: i32, y: i32, w: u16) void {
     const start = @intCast(usize, x + y * maze_width);
     for (self.tiles[start .. start + w]) |*tile| {
@@ -38,6 +39,7 @@ fn hline(self: Self, x: i32, y: i32, w: u16) void {
     }
 }
 
+// write a line of walls vertically
 fn vline(self: Self, x: i32, y: i32, w: u16) void {
     var iy = y;
     while (iy < y + w) : (iy += 1) {
@@ -46,6 +48,8 @@ fn vline(self: Self, x: i32, y: i32, w: u16) void {
     }
 }
 
+// room_scale is the approximate minimum number of tiles for a square room. At 2 hallways can form
+// that fill with door, but 3 is plenty dense.
 const room_scale = 3;
 fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
     if (area.w < room_scale * 3 or area.h < room_scale * 3) {
@@ -54,15 +58,7 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
     const w = rng.intRangeLessThanBiased(u16, room_scale, area.w - room_scale);
     const h = rng.intRangeLessThanBiased(u16, room_scale, area.h - room_scale);
 
-    const gaps = [4]u16{
-        rng.uintLessThanBiased(u16, h),
-        rng.intRangeLessThanBiased(u16, h + 1, area.h),
-
-        rng.uintLessThanBiased(u16, w),
-        rng.intRangeLessThanBiased(u16, w + 1, area.w),
-    };
-
-    const bisects = [4]Rect{
+    const quadrants = [4]Rect{
         Rect{
             .x = area.x,
             .y = area.y,
@@ -92,6 +88,16 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
     self.hline(area.x, area.y + h, area.w);
     self.vline(area.x + w, area.y, area.h);
 
+    const gaps = [4]u16{
+        rng.uintLessThanBiased(u16, h),
+        rng.intRangeLessThanBiased(u16, h + 1, area.h),
+
+        rng.uintLessThanBiased(u16, w),
+        rng.intRangeLessThanBiased(u16, w + 1, area.w),
+    };
+
+    // Remove walls to create random gaps. These gaps may turn into doors or breakable rocks.
+    // There must be at least 1 hole in every quadrant to make the maze solvable.
     for (gaps) |gap, n| {
         const x = area.x + if (n < 2) w else gap;
         const y = area.y + if (n < 2) gap else h;
@@ -100,19 +106,22 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
         self.tiles[ipixel] = .empty;
     }
 
-    for (bisects) |bisect| {
-        self.generateMaze(rng, bisect);
+    for (quadrants) |quadrant| {
+        self.generateMaze(rng, quadrant);
     }
 
+    // the first quadrants created will be far apart, we separate the flames by quadrant so the
+    // player may search for a fairly long time.
     const first = area.x == 0 and area.w == maze_width;
     if (first) {
+        // four quadrants but only three flames, we must skip generating in one of them.
         const skip = rng.uintLessThanBiased(u3, 4);
-        for (bisects) |bisect, n| {
+        for (quadrants) |quadrant, n| {
             if (n == skip)
                 continue;
-            const midpoint = bisect.midpoint();
-            const mi = @intCast(usize, midpoint.x + midpoint.y * maze_width);
-            self.tiles[mi] = .torch_lit;
+            const midpoint = quadrant.midpoint();
+            const midpoint_index = @intCast(usize, midpoint.x + midpoint.y * maze_width);
+            self.tiles[midpoint_index] = .torch_lit;
         }
     }
 }
@@ -187,13 +196,19 @@ pub fn generate(self: Self, seed: u32) void {
             const neighbors = self.findNeighbors(n, .wall);
 
             if ((neighbors.mask == 0b1010 or neighbors.mask == 0b0101) and n % door_chance == 0) {
+                // if a empty tile has two walls on either side we probably made that gap so the
+                // player may pass, but every now and then we want a door to block them for a while.
                 tile.* = .door;
             } else if (neighbors.count() >= 3) {
+                // if a empty tile has three or more walls around it, it means we made a gap that is
+                // supposed to be traversable, but it will filled around by later quadrant
+                // generations. To fix this we turn the crossroads into breakable rocks.
                 self.breakableNeighbors(n);
             }
         }
     }
 
+    // pick random empty tiles to spawn lil roaches.
     var nextIndex: usize = 0;
     while (nextIndex < self.roaches.len) {
         const tileIndex = random.uintLessThanBiased(usize, self.tiles.len);
@@ -201,6 +216,7 @@ pub fn generate(self: Self, seed: u32) void {
         if (self.tiles[tileIndex] == .empty) {
             const x = @intCast(i32, tileIndex % maze_width) * 16 + 3;
             const y = @intCast(i32, tileIndex / maze_width) * 16 + 5;
+            // roaches should only move up/down or left/right, NOT diagonally.
             const dirtest = random.boolean();
             self.roaches[nextIndex] = Roach{
                 .pos = .{ .x = x, .y = y },
@@ -249,6 +265,7 @@ pub fn draw(self: Self, camera: Point) void {
     }
 }
 
+// if hit by area convert a tile
 fn hit_to(self: *Self, area: Rect, from: Tile, to: Tile) bool {
     const midpoint = area.midpoint().shrink(tile_size);
 
@@ -297,7 +314,10 @@ pub fn walkable(self: Self, area: Rect) bool {
 
         switch (tile) {
             .empty, .crumbled, .torch_lit, .torch_unlit, .door_open => {},
+            // ^ walkable tiles ^
+
             .wall, .door, .breakable => {
+                // ^ unwalkable tiles ^
                 return false;
             },
         }

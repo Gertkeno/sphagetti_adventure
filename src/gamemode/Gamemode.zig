@@ -14,6 +14,9 @@ pub const GameModes = union(enum) {
     boss_fight: BossFight,
 
     const Self = @This();
+
+    // if any game mode's update returns true we know to switch to the cutscene when complete will
+    // update the game mode to a new state, from main_menu to labyrinth to boss_fight
     pub fn update(self: *Self, controller: Controller) void {
         switch (meta.activeTag(self.*)) {
             .labyrinth => {
@@ -36,7 +39,6 @@ pub const GameModes = union(enum) {
                 if (ptr.update(controller)) {
                     self.* = switch (ptr.from) {
                         .main_menu => GameModes{ .labyrinth = Labyrinth{} },
-                        //.main_menu => GameModes{ .boss_fight = BossFight{} },
                         .labyrinth => GameModes{ .boss_fight = BossFight{} },
                         .boss_fight => GameModes{ .main_menu = MainMenu{} },
                     };
@@ -45,14 +47,3 @@ pub const GameModes = union(enum) {
         }
     }
 };
-
-comptime {
-    const too_big = 100;
-    if (@sizeOf(GameModes) > too_big) {
-        for (meta.fields(GameModes)) |field| {
-            if (@sizeOf(field.field_type) > too_big) {
-                @compileError(field.name ++ " too big!");
-            }
-        }
-    }
-}

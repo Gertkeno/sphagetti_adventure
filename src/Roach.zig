@@ -13,8 +13,10 @@ pos: Point,
 dir: Point,
 
 pub fn update(self: *Self, maze: Maze) void {
+    // walk in the same direction
     self.pos = self.pos.add(self.dir);
 
+    // if it hits a wall, turn around
     if (!maze.walkable(self.to_rect())) {
         self.pos = self.pos.sub(self.dir);
         self.dir = self.dir.scale(-1);
@@ -32,6 +34,7 @@ pub fn to_rect(self: Self) Rect {
 
 pub fn draw(self: Self, camera: Point) void {
     const view = self.pos.sub(camera);
+    // flip the sprite based on which direction it is traveling
     const flip = if (self.dir.x > 0 or self.dir.y > 0) w4.BLIT_FLIP_X else 0;
 
     w4.blit(&roach_img, view.x, view.y, width, height, flip | w4.BLIT_2BPP);

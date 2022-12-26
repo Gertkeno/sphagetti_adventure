@@ -6,7 +6,7 @@ const Sprite = @import("Sprite.zig");
 const String = []const u8;
 const Self = @This();
 
-pub const helena_img = Sprite{
+const helena_img = Sprite{
     .width = 52,
     .height = 97,
     .data = &helena_portrait,
@@ -76,9 +76,10 @@ pub fn draw(self: Self) void {
     w4.DRAW_COLORS.* = 0x31;
     w4.rect(0, 160 - lines_height, 160, lines_height);
 
-    // letters
     w4.DRAW_COLORS.* = 0x12;
 
+    // draw multiple lines of 19 characters. without formatting this can look very bad, that is why
+    // the text files have spaces to fill in chunks of 19.
     const y = 160 - lines_height + 2;
     var i: u31 = 0;
     while (i < lines) {
@@ -87,7 +88,8 @@ pub fn draw(self: Self) void {
         const start = i * 19;
         const end = std.math.min(i * 19 + 19, len);
 
-        w4.text(line[start..end], 4, y + i * 10);
+        const ypos = y + i * 10;
+        w4.text(line[start..end], 4, ypos);
     }
 }
 
