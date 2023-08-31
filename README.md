@@ -2,7 +2,7 @@
 
 A game for Helena, Christmas 2022.
 
-Written in [Zig 0.9.1](https://ziglang.org/download/) for the
+Written in [Zig 0.11.0](https://ziglang.org/download/) for the
 [WASM-4](https://wasm4.org) fantasy console.
 
 ## Building
