@@ -20,22 +20,22 @@ pub const GameModes = union(enum) {
     pub fn update(self: *Self, controller: Controller) void {
         switch (meta.activeTag(self.*)) {
             .labyrinth => {
-                if (@ptrCast(*Labyrinth, self).update(controller)) {
+                if (@as(*Labyrinth, @ptrCast(self)).update(controller)) {
                     self.* = GameModes{ .cutscene = Cutscene{ .from = .labyrinth } };
                 }
             },
             .main_menu => {
-                if (@ptrCast(*MainMenu, self).update(controller)) {
+                if (@as(*MainMenu, @ptrCast(self)).update(controller)) {
                     self.* = GameModes{ .cutscene = Cutscene{ .from = .main_menu } };
                 }
             },
             .boss_fight => {
-                if (@ptrCast(*BossFight, self).update(controller)) {
+                if (@as(*BossFight, @ptrCast(self)).update(controller)) {
                     self.* = GameModes{ .cutscene = Cutscene{ .from = .boss_fight } };
                 }
             },
             .cutscene => {
-                const ptr = @ptrCast(*Cutscene, self);
+                const ptr: *Cutscene = @as(*Cutscene, @ptrCast(self));
                 if (ptr.update(controller)) {
                     self.* = switch (ptr.from) {
                         .main_menu => GameModes{ .labyrinth = Labyrinth{} },

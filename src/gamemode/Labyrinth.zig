@@ -58,7 +58,7 @@ pub fn update(self: *Self, gamepad: Controller) bool {
 
     if (self.player.attacking > 0) {
         const hitbox = self.player.hitbox();
-        for (roach_data[0..self.active_roaches]) |roach, n| {
+        for (roach_data[0..self.active_roaches], 0..) |roach, n| {
             if (roach.to_rect().collides(hitbox)) {
                 if (self.keys < 255) {
                     self.keys += 1;
@@ -126,7 +126,7 @@ pub fn update(self: *Self, gamepad: Controller) bool {
         var ti: u2 = 0;
         while (ti < 3) : (ti += 1) {
             w4.DRAW_COLORS.* = if (self.flame_got > ti) 0x12 else 0x13;
-            const tx = @intCast(i32, ti) * 7 + x;
+            const tx = @as(i32, @intCast(ti)) * 7 + x;
             w4.blit(&flame_collect, tx, 143, flame_collect_width, flame_collect_height, flame_collect_flags);
         }
     }

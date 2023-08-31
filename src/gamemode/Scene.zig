@@ -15,7 +15,7 @@ fn char_count(dialogue: String) usize {
     var lineitr = std.mem.tokenize(u8, dialogue, ";");
     while (lineitr.next()) |line| {
         if (line[0] != '!') {
-            const trimmed = std.mem.trim(u8, line, &std.ascii.spaces);
+            const trimmed = std.mem.trim(u8, line, &std.ascii.whitespace);
 
             count += trimmed.len;
         }
@@ -36,7 +36,7 @@ pub fn init_comptime(comptime dialogue: String, imgs: anytype) Self {
 
     var tokenItr = std.mem.tokenize(u8, dialogue, ";");
     while (tokenItr.next()) |t| {
-        const token = std.mem.trim(u8, t, &std.ascii.spaces);
+        const token = std.mem.trim(u8, t, &std.ascii.whitespace);
         if (token[0] == '!') {
             sequences[seq_index] = Sequence{
                 .new_slide = @field(imgs, token[1..]),

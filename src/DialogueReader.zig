@@ -34,7 +34,7 @@ pub fn update(self: *Self, controls: Controller) bool {
     }
 
     if (controls.released.x or controls.released.y) {
-        const len = std.math.min(self.chardraw >> 2, line.len);
+        const len = @min(self.chardraw >> 2, line.len);
         if (len == line.len) {
             self.chardraw = 0;
 
@@ -44,7 +44,7 @@ pub fn update(self: *Self, controls: Controller) bool {
                 return false;
             }
         } else {
-            self.chardraw = @intCast(u31, line.len << 2);
+            self.chardraw = @as(u31, @intCast(line.len << 2));
         }
     }
 
@@ -67,7 +67,7 @@ pub fn draw(self: Self) void {
     const lineend = std.mem.indexOfScalarPos(u8, readhead, self.readhead_index, '\n') orelse readhead.len;
     const line = readhead[self.readhead_index..lineend];
 
-    const len = std.math.min(self.chardraw >> 2, line.len);
+    const len = @min(self.chardraw >> 2, line.len);
 
     const lines = len / 19 + 1;
     const lines_height = lines * 10 + 2;
@@ -86,7 +86,7 @@ pub fn draw(self: Self) void {
         defer i += 1;
 
         const start = i * 19;
-        const end = std.math.min(i * 19 + 19, len);
+        const end = @min(i * 19 + 19, len);
 
         const ypos = y + i * 10;
         w4.text(line[start..end], 4, ypos);

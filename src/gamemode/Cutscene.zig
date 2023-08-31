@@ -44,7 +44,7 @@ fade_outer: u16 = 0,
 sequence_itr: usize = 0,
 
 pub fn update(self: *Self, controller: Controller) bool {
-    const scene = scenes[@enumToInt(self.from)];
+    const scene = scenes[@intFromEnum(self.from)];
 
     if (self.sequence_itr >= scene.items.len) {
         return true;

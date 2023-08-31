@@ -32,8 +32,8 @@ pub fn take_damage(self: *Self, dmg: u8) void {
     self.invincible = 50;
 
     // use the timer to get a semi-random direction to go after taking damage
-    const xflip: i8 = @boolToInt(self.timer & 0b1010 == 0);
-    const yflip: i8 = @boolToInt(self.timer & 0b1001 == 0);
+    const xflip: i8 = @intFromBool(self.timer & 0b1010 == 0);
+    const yflip: i8 = @intFromBool(self.timer & 0b1001 == 0);
     self.dir = Point{
         .x = xflip * 2 - 1,
         .y = yflip * 2 - 1,
@@ -80,7 +80,7 @@ pub fn update(self: *Self) void {
 
 pub fn draw(self: Self) void {
     // picks the first or second animated frame to use
-    const frame: u8 = @boolToInt(self.timer & 0b1000 == 0);
+    const frame: u8 = @intFromBool(self.timer & 0b1000 == 0);
 
     const invincible_flash = self.invincible & 0b110 == 0;
     if (invincible_flash) {

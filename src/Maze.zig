@@ -26,14 +26,14 @@ const maze_height = 70;
 pub const array_size = maze_width * maze_height;
 
 const tile_size = 16;
-pub const view_max_x = maze_width * tile_size - w4.SCREEN_SIZE;
-pub const view_max_y = maze_height * tile_size - w4.SCREEN_SIZE;
+pub const view_max_x: i32 = maze_width * tile_size - w4.SCREEN_SIZE;
+pub const view_max_y: i32 = maze_height * tile_size - w4.SCREEN_SIZE;
 
 const door_chance = 3;
 
 // write a line of walls horizontally
 fn hline(self: Self, x: i32, y: i32, w: u16) void {
-    const start = @intCast(usize, x + y * maze_width);
+    const start: usize = @intCast(x + y * maze_width);
     for (self.tiles[start .. start + w]) |*tile| {
         tile.* = .wall;
     }
@@ -43,7 +43,7 @@ fn hline(self: Self, x: i32, y: i32, w: u16) void {
 fn vline(self: Self, x: i32, y: i32, w: u16) void {
     var iy = y;
     while (iy < y + w) : (iy += 1) {
-        const i = @intCast(usize, x + iy * maze_width);
+        const i: usize = @intCast(x + iy * maze_width);
         self.tiles[i] = .wall;
     }
 }
@@ -68,20 +68,20 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
         Rect{
             .x = area.x + w,
             .y = area.y,
-            .w = @intCast(u16, area.w - w),
+            .w = @intCast(area.w - w),
             .h = h,
         },
         Rect{
             .x = area.x,
             .y = area.y + h,
             .w = w,
-            .h = @intCast(u16, area.h - h),
+            .h = @intCast(area.h - h),
         },
         Rect{
             .x = area.x + w,
             .y = area.y + h,
-            .w = @intCast(u16, area.w - w),
-            .h = @intCast(u16, area.h - h),
+            .w = @intCast(area.w - w),
+            .h = @intCast(area.h - h),
         },
     };
 
@@ -98,11 +98,11 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
 
     // Remove walls to create random gaps. These gaps may turn into doors or breakable rocks.
     // There must be at least 1 hole in every quadrant to make the maze solvable.
-    for (gaps) |gap, n| {
+    for (gaps, 0..) |gap, n| {
         const x = area.x + if (n < 2) w else gap;
         const y = area.y + if (n < 2) gap else h;
 
-        const ipixel: usize = @intCast(usize, y * maze_width + x);
+        const ipixel: usize = @intCast(y * maze_width + x);
         self.tiles[ipixel] = .empty;
     }
 
@@ -116,11 +116,11 @@ fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
     if (first) {
         // four quadrants but only three flames, we must skip generating in one of them.
         const skip = rng.uintLessThanBiased(u3, 4);
-        for (quadrants) |quadrant, n| {
+        for (quadrants, 0..) |quadrant, n| {
             if (n == skip)
                 continue;
             const midpoint = quadrant.midpoint();
-            const midpoint_index = @intCast(usize, midpoint.x + midpoint.y * maze_width);
+            const midpoint_index: usize = @intCast(midpoint.x + midpoint.y * maze_width);
             self.tiles[midpoint_index] = .torch_lit;
         }
     }
@@ -180,7 +180,7 @@ fn breakableNeighbors(self: Self, index: usize) void {
 }
 
 pub fn generate(self: Self, seed: u32) void {
-    std.mem.set(Tile, self.tiles, .empty);
+    @memset(self.tiles, .empty);
     var rng = std.rand.DefaultPrng.init(seed);
     const random = rng.random();
 
@@ -191,7 +191,7 @@ pub fn generate(self: Self, seed: u32) void {
         .h = maze_height,
     });
 
-    for (self.tiles) |*tile, n| {
+    for (self.tiles, 0..) |*tile, n| {
         if (tile.* == .empty) {
             const neighbors = self.findNeighbors(n, .wall);
 
@@ -214,8 +214,8 @@ pub fn generate(self: Self, seed: u32) void {
         const tileIndex = random.uintLessThanBiased(usize, self.tiles.len);
 
         if (self.tiles[tileIndex] == .empty) {
-            const x = @intCast(i32, tileIndex % maze_width) * 16 + 3;
-            const y = @intCast(i32, tileIndex / maze_width) * 16 + 5;
+            const x = @as(i32, @intCast(tileIndex % maze_width)) * 16 + 3;
+            const y = @as(i32, @intCast(tileIndex / maze_width)) * 16 + 5;
             // roaches should only move up/down or left/right, NOT diagonally.
             const dirtest = random.boolean();
             self.roaches[nextIndex] = Roach{
@@ -233,19 +233,19 @@ pub fn draw(self: Self, camera: Point) void {
 
     const inset_x = @mod(camera.x, tile_size);
     const mx = @divTrunc(camera.x, tile_size);
-    const maxx = std.math.min(mx + reduced_wh + 1, maze_width);
+    const maxx = @min(mx + reduced_wh + 1, maze_width);
 
     var my = @divTrunc(camera.y, tile_size);
-    const maxy = std.math.min(my + reduced_wh + 1, maze_height);
+    const maxy = @min(my + reduced_wh + 1, maze_height);
     while (my < maxy) : (my += 1) {
-        const start = @intCast(usize, mx + my * maze_width);
-        const end = @intCast(usize, maxx + my * maze_width);
+        const start: usize = @intCast(mx + my * maze_width);
+        const end: usize = @intCast(maxx + my * maze_width);
 
-        for (self.tiles[start..end]) |tile, n| {
+        for (self.tiles[start..end], 0..) |tile, n| {
             if (tile == .empty)
                 continue;
 
-            const x = @intCast(i32, n) * tile_size - inset_x;
+            const x = @as(i32, @intCast(n)) * tile_size - inset_x;
             const y = my * tile_size - camera.y;
             const art: [*]const u8 = switch (tile) {
                 .wall => &wall_br,
@@ -271,7 +271,7 @@ fn hit_to(self: *Self, area: Rect, from: Tile, to: Tile) bool {
 
     const index = midpoint.x + midpoint.y * maze_width;
     if (index > 0 and index < self.tiles.len) {
-        const i = @intCast(usize, index);
+        const i: usize = @intCast(index);
         if (self.tiles[i] == from) {
             self.tiles[i] = to;
             return true;
@@ -310,7 +310,7 @@ pub fn walkable(self: Self, area: Rect) bool {
     };
 
     for (vertecies) |vertex| {
-        const tile = self.tiles[@intCast(u32, vertex)];
+        const tile = self.tiles[@intCast(vertex)];
 
         switch (tile) {
             .empty, .crumbled, .torch_lit, .torch_unlit, .door_open => {},

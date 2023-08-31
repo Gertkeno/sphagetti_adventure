@@ -34,7 +34,7 @@ pub fn update(self: *Self, controller: Controller) bool {
     self.boss.update();
 
     // remove braziers when done exploding
-    for (self.braziers.slice()) |*brazier, n| {
+    for (self.braziers.slice(), 0..) |*brazier, n| {
         if (brazier.exploding > 0) {
             brazier.exploding -= 1;
 
@@ -47,7 +47,7 @@ pub fn update(self: *Self, controller: Controller) bool {
 
     // reset braziers when empty
     if (self.braziers.len == 0) {
-        const seed: u32 = @intCast(u32, self.boss.area.x + self.boss.area.y) + self.boss.timer;
+        const seed: u32 = @as(u32, @intCast(self.boss.area.x + self.boss.area.y)) + self.boss.timer;
         var rng = std.rand.DefaultPrng.init(seed);
         const random = rng.random();
 
