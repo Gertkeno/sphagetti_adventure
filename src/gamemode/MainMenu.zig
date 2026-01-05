@@ -15,7 +15,8 @@ pub fn update(self: *@This(), gamepad: Controller) bool {
         const x = gamepad.x_axis();
         if (x != 0) {
             self.seed +%= x;
-            self.seed_text_len = std.fmt.formatIntBuf(&self.seed_text_buffer, @as(u32, @bitCast(self.seed)), 16, .upper, .{});
+            const new_seed_text = std.fmt.bufPrint(&self.seed_text_buffer, "{X}", .{@as(u32, @bitCast(self.seed))}) catch unreachable;
+            self.seed_text_len = new_seed_text.len;
         } else if (gamepad.released.x) {
             // starting the game requires the maze to be generated before we set the game state
             // to labyrinth. return true; puts us in a cutscene, then the labyrinth.

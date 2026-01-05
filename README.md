@@ -2,7 +2,7 @@
 
 A game for Helena, Christmas 2022.
 
-Written in [Zig 0.11.0](https://ziglang.org/download/) for the
+Written in [Zig 0.15.2](https://ziglang.org/download/) for the
 [WASM-4](https://wasm4.org) fantasy console.
 
 ## Building
@@ -10,7 +10,7 @@ Written in [Zig 0.11.0](https://ziglang.org/download/) for the
 Build the cart by running:
 
 ```shell
-zig build -Drelease-small=true
+zig build -Doptimize=ReleaseSmall
 ```
 
 Then run it with:

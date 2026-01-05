@@ -8,11 +8,11 @@ const Sequence = union(enum) {
     text: String,
 };
 
-items: []Sequence,
+items: []const Sequence,
 
 fn char_count(dialogue: String) usize {
     var count: usize = 0;
-    var lineitr = std.mem.tokenize(u8, dialogue, ";");
+    var lineitr = std.mem.tokenizeScalar(u8, dialogue, ';');
     while (lineitr.next()) |line| {
         if (line[0] != '!') {
             const trimmed = std.mem.trim(u8, line, &std.ascii.whitespace);
@@ -34,7 +34,7 @@ pub fn init_comptime(comptime dialogue: String, imgs: anytype) Self {
     var text_buffer: [tc]u8 = undefined;
     var text_index: usize = 0;
 
-    var tokenItr = std.mem.tokenize(u8, dialogue, ";");
+    var tokenItr = std.mem.tokenizeScalar(u8, dialogue, ';');
     while (tokenItr.next()) |t| {
         const token = std.mem.trim(u8, t, &std.ascii.whitespace);
         if (token[0] == '!') {
@@ -43,11 +43,11 @@ pub fn init_comptime(comptime dialogue: String, imgs: anytype) Self {
             };
             seq_index += 1;
         } else {
-            std.mem.copy(u8, text_buffer[text_index..], token);
-            const new_text = text_buffer[text_index .. text_index + token.len];
+            std.mem.copyForwards(u8, text_buffer[text_index..], token);
+            const new_text = text_buffer[text_index .. text_index + token.len].*;
 
             sequences[seq_index] = Sequence{
-                .text = new_text,
+                .text = &new_text,
             };
             seq_index += 1;
 
@@ -55,7 +55,8 @@ pub fn init_comptime(comptime dialogue: String, imgs: anytype) Self {
         }
     }
 
+    const final = sequences[0..].*;
     return Self{
-        .items = &sequences,
+        .items = &final,
     };
 }

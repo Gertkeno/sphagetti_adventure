@@ -34,10 +34,7 @@ fn total_keys(self: Self) u8 {
 }
 
 fn update_key_counter(self: *Self) void {
-    _ = std.fmt.formatIntBuf(&self.key_text, self.total_keys(), 10, .lower, .{
-        .width = 2,
-        .fill = '0',
-    });
+    _ = std.fmt.bufPrint(&self.key_text, "{d:02}", .{self.total_keys()}) catch unreachable;
 }
 
 pub fn update(self: *Self, gamepad: Controller) bool {
@@ -117,7 +114,8 @@ pub fn update(self: *Self, gamepad: Controller) bool {
 
         w4.DRAW_COLORS.* = 0x04;
         const key_segment = (self.keys % key_pieces) * 2;
-        w4.blitSub(&key, x, 152, key_segment, key_height, 0, 0, 8, w4.BLIT_ROTATE | w4.BLIT_FLIP_X);
+        if (key_segment != 0)
+            w4.blitSub(&key, x, 152, key_segment, key_height, 0, 0, 8, w4.BLIT_ROTATE | w4.BLIT_FLIP_X);
 
         // key count
         w4.text(&self.key_text, x + 4, 152);

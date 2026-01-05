@@ -21,7 +21,7 @@ const palette = [4]u32{
 
 export fn start() void {
     // set the color palette once
-    std.mem.copy(u32, w4.PALETTE, &palette);
+    @memcpy(w4.PALETTE, &palette);
 }
 
 export fn update() void {

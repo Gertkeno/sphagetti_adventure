@@ -51,7 +51,7 @@ fn vline(self: Self, x: i32, y: i32, w: u16) void {
 // room_scale is the approximate minimum number of tiles for a square room. At 2 hallways can form
 // that fill with door, but 3 is plenty dense.
 const room_scale = 3;
-fn generateMaze(self: Self, rng: std.rand.Random, area: Rect) void {
+fn generateMaze(self: Self, rng: std.Random, area: Rect) void {
     if (area.w < room_scale * 3 or area.h < room_scale * 3) {
         return;
     }
@@ -181,7 +181,7 @@ fn breakableNeighbors(self: Self, index: usize) void {
 
 pub fn generate(self: Self, seed: u32) void {
     @memset(self.tiles, .empty);
-    var rng = std.rand.DefaultPrng.init(seed);
+    var rng = std.Random.DefaultPrng.init(seed);
     const random = rng.random();
 
     self.generateMaze(random, .{

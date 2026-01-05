@@ -11,8 +11,9 @@ const Player = @import("../Player.zig");
 const Self = @This();
 
 const Brazier = struct {
-    pos: Point,
+    pos: Point = .{ .x = 0, .y = 0 },
     exploding: u8 = 0,
+    spent: bool = true,
 
     pub const wh = 16;
     pub const explode_time = 80;
@@ -23,7 +24,15 @@ player: Player = .{
     .pos = .{ .x = 76, .y = 68 },
 },
 
-braziers: std.BoundedArray(Brazier, 3) = .{ .buffer = undefined },
+braziers: [3]Brazier = .{ .{}, .{}, .{} },
+
+fn any_braziers(self: Self) bool {
+    for (self.braziers) |b| {
+        if (!b.spent)
+            return true;
+    }
+    return false;
+}
 
 pub fn update(self: *Self, controller: Controller) bool {
     self.player.update(controller, null);
@@ -34,37 +43,36 @@ pub fn update(self: *Self, controller: Controller) bool {
     self.boss.update();
 
     // remove braziers when done exploding
-    for (self.braziers.slice(), 0..) |*brazier, n| {
+    for (&self.braziers) |*brazier| {
         if (brazier.exploding > 0) {
             brazier.exploding -= 1;
 
             if (brazier.exploding == 0) {
-                _ = self.braziers.swapRemove(n);
-                break;
+                brazier.spent = true;
             }
         }
     }
 
     // reset braziers when empty
-    if (self.braziers.len == 0) {
+    if (!self.any_braziers()) {
         const seed: u32 = @as(u32, @intCast(self.boss.area.x + self.boss.area.y)) + self.boss.timer;
-        var rng = std.rand.DefaultPrng.init(seed);
+        var rng = std.Random.DefaultPrng.init(seed);
         const random = rng.random();
 
-        while (self.braziers.len < 3) {
-            var new = self.braziers.addOneAssumeCapacity();
-            new.pos = Point{
+        for (&self.braziers) |*brazier| {
+            brazier.pos = Point{
                 .x = random.intRangeLessThanBiased(i32, 0, 144),
                 .y = random.intRangeLessThanBiased(i32, 0, 144),
             };
-            new.exploding = 0;
+            brazier.exploding = 0;
+            brazier.spent = false;
         }
     }
 
     if (self.player.attacking > 0) {
         const hitbox = self.player.hitbox();
         // player triggers brazier
-        for (self.braziers.slice()) |*brazier| {
+        for (&self.braziers) |*brazier| {
             const rect = Rect{
                 .x = brazier.pos.x,
                 .y = brazier.pos.y,
@@ -88,7 +96,7 @@ pub fn update(self: *Self, controller: Controller) bool {
     }
 
     // braziers damage boss
-    for (self.braziers.constSlice()) |brazier| {
+    for (self.braziers) |brazier| {
         if (brazier.exploding > 0) {
             const hitbox = Rect{
                 .x = brazier.pos.x,
@@ -107,7 +115,10 @@ pub fn update(self: *Self, controller: Controller) bool {
     w4.DRAW_COLORS.* = 0x31;
     w4.blit(&boss_arena, 4, 5, boss_arena_width, boss_arena_height, boss_arena_flags);
 
-    for (self.braziers.constSlice()) |brazier| {
+    for (self.braziers) |brazier| {
+        if (brazier.spent)
+            continue;
+
         if (brazier.exploding > 0) {
             const flash = brazier.exploding & 0b10 == 0;
             w4.DRAW_COLORS.* = if (flash) 0x34 else 0x43;
